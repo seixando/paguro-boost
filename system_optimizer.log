@@ -1,0 +1,87 @@
+2025-06-29 15:30:04,939 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 15:30:05,510 - INFO - Gerenciadores encontrados: apt, snap
+2025-06-29 15:30:05,510 - INFO - === Iniciando otimização do sistema ===
+2025-06-29 15:30:05,510 - INFO - Medições antes da limpeza:
+2025-06-29 15:30:06,513 - INFO - CPU: 4.1% | Memória: 6.1% | Disco: 0.4%
+2025-06-29 15:30:06,513 - INFO - Executando rotinas de limpeza e otimização:
+2025-06-29 15:30:06,528 - WARNING - Limpeza /tmp - Aviso: 
+2025-06-29 15:30:06,542 - WARNING - Limpeza /var/tmp - Aviso: 
+2025-06-29 15:30:06,592 - INFO - Limpeza cache do usuário - Sucesso
+2025-06-29 15:30:06,712 - WARNING - Parando serviço Windows Update - Aviso: /bin/sh: 1: net: not found
+
+2025-06-29 15:30:06,845 - WARNING - Parando serviço BITS - Aviso: /bin/sh: 1: net: not found
+
+2025-06-29 15:30:06,956 - WARNING - Limpando cache - Aviso: 
+2025-06-29 15:30:07,072 - WARNING - Iniciando serviço Windows Update - Aviso: /bin/sh: 1: net: not found
+
+2025-06-29 15:30:07,193 - WARNING - Iniciando serviço BITS - Aviso: /bin/sh: 1: net: not found
+
+2025-06-29 15:30:07,205 - WARNING - Atualizando lista de pacotes - Aviso: sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+
+2025-06-29 15:30:07,306 - WARNING - Verificação SFC - Aviso: /bin/sh: 1: sfc: not found
+
+2025-06-29 15:30:07,420 - WARNING - Correção DISM - Aviso: /bin/sh: 1: dism: Permission denied
+
+2025-06-29 15:30:07,530 - WARNING - Limpeza do Prefetch - Aviso: 
+2025-06-29 15:30:07,531 - INFO - Iniciando verificação de vírus com o Microsoft Defender...
+2025-06-29 15:30:07,532 - WARNING - Microsoft Defender não encontrado
+2025-06-29 15:30:07,532 - INFO - Medições após a limpeza:
+2025-06-29 15:30:08,534 - INFO - CPU: 2.6% | Memória: 6.1% | Disco: 0.4%
+2025-06-29 15:30:08,535 - INFO - === Relatório de Otimização ===
+2025-06-29 15:30:08,535 - INFO - Variação CPU: 1.50%
+2025-06-29 15:30:08,536 - INFO - Variação Memória: 0.00%
+2025-06-29 15:30:08,536 - INFO - Variação Disco: 0.00%
+2025-06-29 15:30:08,537 - INFO - Recomendação: Reinicie o sistema para melhor desempenho.
+2025-06-29 15:43:51,185 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 15:43:51,720 - INFO - Gerenciadores encontrados: apt, snap
+2025-06-29 15:43:51,721 - INFO - === Iniciando otimização do sistema ===
+2025-06-29 15:43:51,721 - INFO - Medições antes da limpeza:
+2025-06-29 15:43:52,723 - INFO - CPU: 4.9% | Memória: 5.7% | Disco: 0.4%
+2025-06-29 15:43:52,724 - INFO - Executando rotinas de limpeza e otimização:
+2025-06-29 15:43:52,759 - WARNING - Limpeza /tmp - Aviso: 
+2025-06-29 15:43:52,770 - WARNING - Limpeza /var/tmp - Aviso: 
+2025-06-29 15:43:52,776 - INFO - Limpeza cache do usuário - Sucesso
+2025-06-29 15:43:52,786 - WARNING - Limpeza cache APT - Aviso: 
+2025-06-29 15:43:52,796 - WARNING - Remoção pacotes órfãos - Aviso: 
+2025-06-29 15:43:52,806 - WARNING - Limpeza logs do sistema - Aviso: 
+2025-06-29 15:43:52,816 - WARNING - Atualizando lista de pacotes - Aviso: sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+
+2025-06-29 15:43:52,825 - WARNING - Configuração pacotes quebrados - Aviso: 
+2025-06-29 15:43:52,838 - WARNING - Correção dependências - Aviso: 
+2025-06-29 15:43:52,842 - INFO - Limpeza thumbnails e cache de ícones - Sucesso
+2025-06-29 15:43:53,036 - INFO - Nenhum antivírus encontrado (clamscan/rkhunter)
+2025-06-29 15:43:53,037 - INFO - Medições após a limpeza:
+2025-06-29 15:43:54,039 - INFO - CPU: 4.3% | Memória: 5.8% | Disco: 0.4%
+2025-06-29 15:43:54,040 - INFO - === Relatório de Otimização ===
+2025-06-29 15:43:54,040 - INFO - Variação CPU: 0.60%
+2025-06-29 15:43:54,041 - INFO - Variação Memória: -0.10%
+2025-06-29 15:43:54,041 - INFO - Variação Disco: 0.00%
+2025-06-29 15:43:54,041 - INFO - Recomendação: Reinicie o sistema para melhor desempenho.
+2025-06-29 15:44:30,361 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 15:44:30,835 - INFO - Gerenciadores encontrados: apt, snap
+2025-06-29 15:44:30,836 - INFO - === Iniciando otimização do sistema ===
+2025-06-29 15:44:30,836 - INFO - Medições antes da limpeza:
+2025-06-29 15:44:31,838 - INFO - CPU: 1.7% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 15:44:31,838 - INFO - Executando rotinas de limpeza e otimização:
+2025-06-29 15:44:31,845 - WARNING - Limpeza /tmp - Aviso: 
+2025-06-29 15:44:31,851 - WARNING - Limpeza /var/tmp - Aviso: 
+2025-06-29 15:44:31,854 - INFO - Limpeza cache do usuário - Sucesso
+2025-06-29 15:44:31,861 - WARNING - Limpeza cache APT - Aviso: 
+2025-06-29 15:44:31,868 - WARNING - Remoção pacotes órfãos - Aviso: 
+2025-06-29 15:44:31,875 - WARNING - Limpeza logs do sistema - Aviso: 
+2025-06-29 15:44:31,883 - WARNING - Atualizando lista de pacotes - Aviso: sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+
+2025-06-29 15:44:31,891 - WARNING - Configuração pacotes quebrados - Aviso: 
+2025-06-29 15:44:31,899 - WARNING - Correção dependências - Aviso: 
+2025-06-29 15:44:31,902 - INFO - Limpeza thumbnails e cache de ícones - Sucesso
+2025-06-29 15:44:32,018 - INFO - Nenhum antivírus encontrado (clamscan/rkhunter)
+2025-06-29 15:44:32,018 - INFO - Medições após a limpeza:
+2025-06-29 15:44:33,020 - INFO - CPU: 1.0% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 15:44:33,021 - INFO - === Relatório de Otimização ===
+2025-06-29 15:44:33,021 - INFO - Variação CPU: 0.70%
+2025-06-29 15:44:33,021 - INFO - Variação Memória: 0.00%
+2025-06-29 15:44:33,022 - INFO - Variação Disco: 0.00%
+2025-06-29 15:44:33,022 - INFO - Recomendação: Reinicie o sistema para melhor desempenho.
