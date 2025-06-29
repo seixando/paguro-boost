@@ -99,6 +99,10 @@ class PaguroBoostGUI:
                                                   command=self.show_performance_report, style='Custom.TButton')
         self.performance_report_button.grid(row=1, column=1, padx=5, pady=(5, 0), sticky=(tk.W, tk.E))
         
+        self.disk_analysis_button = ttk.Button(control_frame, text="[D] Análise Disco", 
+                                             command=self.show_disk_analysis, style='Custom.TButton')
+        self.disk_analysis_button.grid(row=2, column=0, padx=(0, 5), pady=(5, 0), sticky=(tk.W, tk.E))
+        
         self.monitor_toggle_button = ttk.Button(control_frame, text="[>] Iniciar Monitor", 
                                               command=self.toggle_monitoring, style='Custom.TButton')
         self.monitor_toggle_button.grid(row=1, column=2, padx=(5, 0), pady=(5, 0), sticky=(tk.W, tk.E))
@@ -132,6 +136,10 @@ class PaguroBoostGUI:
                        variable=self.check_integrity_var).grid(row=4, column=0, sticky=tk.W, pady=2)
         ttk.Checkbutton(options_frame, text="[V] Scan de Vírus", 
                        variable=self.scan_virus_var).grid(row=5, column=0, sticky=tk.W, pady=2)
+        
+        self.disk_optimization_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(options_frame, text="[D] Otimizar Disco", 
+                       variable=self.disk_optimization_var).grid(row=6, column=0, sticky=tk.W, pady=2)
         
         # Log de saída estilo terminal retro
         log_frame = ttk.LabelFrame(main_frame, text="[TERMINAL DE OPERAÇÕES]", padding="5")
@@ -362,6 +370,9 @@ class PaguroBoostGUI:
                 
             if self.scan_virus_var.get():
                 operations.append((self.optimizer.verificar_virus, "[V] Executando scan de vírus"))
+                
+            if self.disk_optimization_var.get():
+                operations.append((lambda: self.optimizer.otimizar_disco_avancado(limpar_antigos=True), "[D] Otimizando disco avançado"))
             
             # Executar operações
             for operation, description in operations:
@@ -657,6 +668,124 @@ class PaguroBoostGUI:
             self.monitoring = False
             self.monitor_toggle_button.config(text="[>] Iniciar Monitor")
             self.log_message("[||] Monitoramento contínuo parado")
+    
+    def show_disk_analysis(self):
+        """Mostra janela com análise detalhada de disco."""
+        def analyze_disk():
+            try:
+                if not self.optimizer:
+                    self.optimizer = SystemOptimizer()
+                
+                analysis = self.optimizer.analisar_uso_disco_detalhado()
+                
+                if not analysis:
+                    messagebox.showerror("Erro", "Não foi possível analisar o disco")
+                    return
+                
+                # Criar janela de análise
+                analysis_window = tk.Toplevel(self.root)
+                analysis_window.title("Análise Detalhada de Disco")
+                analysis_window.geometry("700x600")
+                analysis_window.resizable(True, True)
+                
+                # Frame principal com scrollbar
+                main_frame = ttk.Frame(analysis_window)
+                main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+                
+                # Canvas e scrollbar
+                canvas = tk.Canvas(main_frame)
+                scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+                scrollable_frame = ttk.Frame(canvas)
+                
+                scrollable_frame.bind(
+                    "<Configure>",
+                    lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+                )
+                
+                canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+                canvas.configure(yscrollcommand=scrollbar.set)
+                
+                # Título
+                ttk.Label(scrollable_frame, text="[D] ANÁLISE DE DISCO", 
+                         font=('Courier', 16, 'bold')).pack(pady=(0, 20))
+                
+                # Informações gerais
+                info_frame = ttk.LabelFrame(scrollable_frame, text="Informações Gerais", padding="10")
+                info_frame.pack(fill=tk.X, pady=(0, 10))
+                
+                ttk.Label(info_frame, text=f"Caminho: {analysis.get('caminho', 'N/A')}", 
+                         font=('Courier', 10, 'bold')).pack(anchor=tk.W)
+                ttk.Label(info_frame, text=f"Espaço Total: {analysis.get('espaco_total_gb', 0)} GB").pack(anchor=tk.W)
+                ttk.Label(info_frame, text=f"Espaço Usado: {analysis.get('espaco_usado_gb', 0)} GB").pack(anchor=tk.W)
+                ttk.Label(info_frame, text=f"Espaço Livre: {analysis.get('espaco_livre_gb', 0)} GB").pack(anchor=tk.W)
+                ttk.Label(info_frame, text=f"Uso Percentual: {analysis.get('percentual_uso', 0):.1f}%", 
+                         font=('Courier', 10, 'bold')).pack(anchor=tk.W)
+                
+                # Diretórios grandes
+                dirs_grandes = analysis.get('diretorios_grandes', [])
+                if dirs_grandes:
+                    dirs_frame = ttk.LabelFrame(scrollable_frame, text="Diretórios Grandes", padding="10")
+                    dirs_frame.pack(fill=tk.X, pady=(0, 10))
+                    
+                    for i, diretorio in enumerate(dirs_grandes[:5]):  # Top 5
+                        nome = os.path.basename(diretorio['caminho']) or diretorio['caminho']
+                        ttk.Label(dirs_frame, text=f"{i+1}. {nome}: {diretorio['tamanho_gb']:.1f} GB", 
+                                 font=('Courier', 9)).pack(anchor=tk.W)
+                
+                # Tipos de arquivo
+                tipos = analysis.get('tipos_arquivo', {})
+                if tipos:
+                    tipos_frame = ttk.LabelFrame(scrollable_frame, text="Tipos de Arquivo (Sample)", padding="10")
+                    tipos_frame.pack(fill=tk.X, pady=(0, 10))
+                    
+                    for ext, data in list(tipos.items())[:10]:  # Top 10
+                        ttk.Label(tipos_frame, text=f"{ext}: {data['arquivos']} arquivos ({data['tamanho_mb']:.1f} MB)", 
+                                 font=('Courier', 9)).pack(anchor=tk.W)
+                
+                # Arquivos antigos
+                antigos = analysis.get('arquivos_antigos', {})
+                if antigos and antigos.get('total_arquivos', 0) > 0:
+                    antigos_frame = ttk.LabelFrame(scrollable_frame, text="Arquivos Antigos", padding="10")
+                    antigos_frame.pack(fill=tk.X, pady=(0, 10))
+                    
+                    ttk.Label(antigos_frame, text=f"Total: {antigos['total_arquivos']} arquivos", 
+                             font=('Courier', 10, 'bold')).pack(anchor=tk.W)
+                    ttk.Label(antigos_frame, text=f"Tamanho: {antigos['tamanho_total_mb']:.1f} MB").pack(anchor=tk.W)
+                    
+                    sample_arquivos = antigos.get('sample_arquivos', [])
+                    for arquivo in sample_arquivos[:3]:  # Top 3
+                        nome = os.path.basename(arquivo['arquivo'])
+                        ttk.Label(antigos_frame, text=f"• {nome}: {arquivo['tamanho_mb']:.1f} MB ({arquivo['dias_antigo']} dias)", 
+                                 font=('Courier', 9)).pack(anchor=tk.W, padx=(10, 0))
+                
+                # Duplicados
+                duplicados = analysis.get('duplicados_sample', {})
+                if duplicados and duplicados.get('grupos_duplicados', 0) > 0:
+                    dup_frame = ttk.LabelFrame(scrollable_frame, text="Arquivos Duplicados (Sample)", padding="10")
+                    dup_frame.pack(fill=tk.X, pady=(0, 10))
+                    
+                    ttk.Label(dup_frame, text=f"Grupos de duplicados: {duplicados['grupos_duplicados']}", 
+                             font=('Courier', 10, 'bold')).pack(anchor=tk.W)
+                    ttk.Label(dup_frame, text=f"Espaço desperdiçado: {duplicados['tamanho_desperdicado_mb']:.1f} MB").pack(anchor=tk.W)
+                
+                # Recomendações
+                recomendacoes = analysis.get('recomendacoes', [])
+                if recomendacoes:
+                    rec_frame = ttk.LabelFrame(scrollable_frame, text="Recomendações", padding="10")
+                    rec_frame.pack(fill=tk.X)
+                    
+                    for rec in recomendacoes:
+                        ttk.Label(rec_frame, text=rec, font=('Courier', 9), wraplength=650).pack(anchor=tk.W, pady=2)
+                
+                # Configurar scrollbar
+                canvas.pack(side="left", fill="both", expand=True)
+                scrollbar.pack(side="right", fill="y")
+                
+            except Exception as e:
+                messagebox.showerror("Erro", f"Erro na análise de disco: {e}")
+        
+        # Executar análise em thread separada
+        threading.Thread(target=analyze_disk, daemon=True).start()
 
 
 def main():

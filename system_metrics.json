@@ -767,5 +767,477 @@
     },
     "temperatures": {},
     "boot_time": 1751216489.0
+  },
+  {
+    "timestamp": "2025-06-29T17:37:00.709101",
+    "cpu": {
+      "percent": 1.8,
+      "count": 8,
+      "freq": {
+        "current": 2304.008,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "memory": {
+      "total": 16645316608,
+      "available": 15405088768,
+      "used": 1008459776,
+      "percent": 7.5
+    },
+    "disk": {
+      "total": 1081101176832,
+      "used": 3900497920,
+      "free": 1022208323584,
+      "percent": 0.4
+    },
+    "network": {
+      "bytes_sent": 48150413,
+      "bytes_recv": 489535074,
+      "packets_sent": 114611,
+      "packets_recv": 416084
+    },
+    "processes": {
+      "count": 41,
+      "top_cpu": [],
+      "top_memory": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "memory_percent": 2.960703263301965,
+          "memory_mb": 469
+        },
+        {
+          "pid": 491,
+          "name": "python3.10",
+          "memory_percent": 0.5798516560124298,
+          "memory_mb": 92
+        },
+        {
+          "pid": 520,
+          "name": "python3",
+          "memory_percent": 0.23241804833803256,
+          "memory_mb": 36
+        },
+        {
+          "pid": 1841,
+          "name": "snapd",
+          "memory_percent": 0.2280625168869122,
+          "memory_mb": 36
+        },
+        {
+          "pid": 290,
+          "name": "unattended-upgr",
+          "memory_percent": 0.12992771786392926,
+          "memory_mb": 20
+        }
+      ]
+    },
+    "temperatures": {},
+    "boot_time": 1751216489.0
+  },
+  {
+    "timestamp": "2025-06-29T17:39:05.352634",
+    "cpu": {
+      "percent": 1.9,
+      "count": 8,
+      "freq": {
+        "current": 2304.008,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "memory": {
+      "total": 16645316608,
+      "available": 15462760448,
+      "used": 932970496,
+      "percent": 7.1
+    },
+    "disk": {
+      "total": 1081101176832,
+      "used": 3900526592,
+      "free": 1022208294912,
+      "percent": 0.4
+    },
+    "network": {
+      "bytes_sent": 49857002,
+      "bytes_recv": 490183267,
+      "packets_sent": 117021,
+      "packets_recv": 418651
+    },
+    "processes": {
+      "count": 41,
+      "top_cpu": [],
+      "top_memory": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "memory_percent": 2.4662643172716754,
+          "memory_mb": 391
+        },
+        {
+          "pid": 491,
+          "name": "python3.10",
+          "memory_percent": 0.5798516560124298,
+          "memory_mb": 92
+        },
+        {
+          "pid": 520,
+          "name": "python3",
+          "memory_percent": 0.23241804833803256,
+          "memory_mb": 36
+        },
+        {
+          "pid": 1841,
+          "name": "snapd",
+          "memory_percent": 0.2280625168869122,
+          "memory_mb": 36
+        },
+        {
+          "pid": 290,
+          "name": "unattended-upgr",
+          "memory_percent": 0.12992771786392926,
+          "memory_mb": 20
+        }
+      ]
+    },
+    "temperatures": {},
+    "boot_time": 1751216489.0
+  },
+  {
+    "timestamp": "2025-06-29T17:39:06.392874",
+    "cpu": {
+      "percent": 1.8,
+      "count": 8,
+      "freq": {
+        "current": 2304.008,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "memory": {
+      "total": 16645316608,
+      "available": 15462760448,
+      "used": 932970496,
+      "percent": 7.1
+    },
+    "disk": {
+      "total": 1081101176832,
+      "used": 3900526592,
+      "free": 1022208294912,
+      "percent": 0.4
+    },
+    "network": {
+      "bytes_sent": 49858827,
+      "bytes_recv": 490186056,
+      "packets_sent": 117033,
+      "packets_recv": 418663
+    },
+    "processes": {
+      "count": 41,
+      "top_cpu": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "cpu_percent": 12.5
+        },
+        {
+          "pid": 63998,
+          "name": "python3",
+          "cpu_percent": 1.9
+        },
+        {
+          "pid": 1,
+          "name": "systemd",
+          "cpu_percent": 1.0
+        }
+      ],
+      "top_memory": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "memory_percent": 2.469414080128983,
+          "memory_mb": 392
+        },
+        {
+          "pid": 491,
+          "name": "python3.10",
+          "memory_percent": 0.5798516560124298,
+          "memory_mb": 92
+        },
+        {
+          "pid": 520,
+          "name": "python3",
+          "memory_percent": 0.23241804833803256,
+          "memory_mb": 36
+        },
+        {
+          "pid": 1841,
+          "name": "snapd",
+          "memory_percent": 0.2280625168869122,
+          "memory_mb": 36
+        },
+        {
+          "pid": 290,
+          "name": "unattended-upgr",
+          "memory_percent": 0.12992771786392926,
+          "memory_mb": 20
+        }
+      ]
+    },
+    "temperatures": {},
+    "boot_time": 1751216489.0
+  },
+  {
+    "timestamp": "2025-06-29T17:39:07.408018",
+    "cpu": {
+      "percent": 1.6,
+      "count": 8,
+      "freq": {
+        "current": 2304.008,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "memory": {
+      "total": 16645316608,
+      "available": 15461986304,
+      "used": 933744640,
+      "percent": 7.1
+    },
+    "disk": {
+      "total": 1081101176832,
+      "used": 3900526592,
+      "free": 1022208294912,
+      "percent": 0.4
+    },
+    "network": {
+      "bytes_sent": 49860652,
+      "bytes_recv": 490188899,
+      "packets_sent": 117045,
+      "packets_recv": 418676
+    },
+    "processes": {
+      "count": 41,
+      "top_cpu": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "cpu_percent": 6.9
+        },
+        {
+          "pid": 1,
+          "name": "systemd",
+          "cpu_percent": 1.0
+        },
+        {
+          "pid": 520,
+          "name": "python3",
+          "cpu_percent": 1.0
+        },
+        {
+          "pid": 63998,
+          "name": "python3",
+          "cpu_percent": 1.0
+        }
+      ],
+      "top_memory": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "memory_percent": 2.4717764022719635,
+          "memory_mb": 392
+        },
+        {
+          "pid": 491,
+          "name": "python3.10",
+          "memory_percent": 0.5798516560124298,
+          "memory_mb": 92
+        },
+        {
+          "pid": 520,
+          "name": "python3",
+          "memory_percent": 0.23241804833803256,
+          "memory_mb": 36
+        },
+        {
+          "pid": 1841,
+          "name": "snapd",
+          "memory_percent": 0.2280625168869122,
+          "memory_mb": 36
+        },
+        {
+          "pid": 290,
+          "name": "unattended-upgr",
+          "memory_percent": 0.12992771786392926,
+          "memory_mb": 20
+        }
+      ]
+    },
+    "temperatures": {},
+    "boot_time": 1751216489.0
+  },
+  {
+    "timestamp": "2025-06-29T17:39:08.442994",
+    "cpu": {
+      "percent": 1.5,
+      "count": 8,
+      "freq": {
+        "current": 2304.008,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "memory": {
+      "total": 16645316608,
+      "available": 15461986304,
+      "used": 933744640,
+      "percent": 7.1
+    },
+    "disk": {
+      "total": 1081101176832,
+      "used": 3900526592,
+      "free": 1022208294912,
+      "percent": 0.4
+    },
+    "network": {
+      "bytes_sent": 49862477,
+      "bytes_recv": 490191741,
+      "packets_sent": 117057,
+      "packets_recv": 418689
+    },
+    "processes": {
+      "count": 41,
+      "top_cpu": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "cpu_percent": 7.7
+        },
+        {
+          "pid": 1,
+          "name": "systemd",
+          "cpu_percent": 1.9
+        }
+      ],
+      "top_memory": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "memory_percent": 2.4741387244149435,
+          "memory_mb": 392
+        },
+        {
+          "pid": 491,
+          "name": "python3.10",
+          "memory_percent": 0.5798516560124298,
+          "memory_mb": 92
+        },
+        {
+          "pid": 520,
+          "name": "python3",
+          "memory_percent": 0.23241804833803256,
+          "memory_mb": 36
+        },
+        {
+          "pid": 1841,
+          "name": "snapd",
+          "memory_percent": 0.2280625168869122,
+          "memory_mb": 36
+        },
+        {
+          "pid": 290,
+          "name": "unattended-upgr",
+          "memory_percent": 0.12992771786392926,
+          "memory_mb": 20
+        }
+      ]
+    },
+    "temperatures": {},
+    "boot_time": 1751216489.0
+  },
+  {
+    "timestamp": "2025-06-29T17:39:09.510985",
+    "cpu": {
+      "percent": 1.0,
+      "count": 8,
+      "freq": {
+        "current": 2304.008,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "memory": {
+      "total": 16645316608,
+      "available": 15460220928,
+      "used": 935485440,
+      "percent": 7.1
+    },
+    "disk": {
+      "total": 1081101176832,
+      "used": 3900526592,
+      "free": 1022208294912,
+      "percent": 0.4
+    },
+    "network": {
+      "bytes_sent": 49864830,
+      "bytes_recv": 490194794,
+      "packets_sent": 117077,
+      "packets_recv": 418705
+    },
+    "processes": {
+      "count": 41,
+      "top_cpu": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "cpu_percent": 6.6
+        },
+        {
+          "pid": 484,
+          "name": "systemd",
+          "cpu_percent": 2.8
+        },
+        {
+          "pid": 63998,
+          "name": "python3",
+          "cpu_percent": 1.9
+        }
+      ],
+      "top_memory": [
+        {
+          "pid": 55100,
+          "name": "claude",
+          "memory_percent": 2.477288487272251,
+          "memory_mb": 393
+        },
+        {
+          "pid": 491,
+          "name": "python3.10",
+          "memory_percent": 0.5798516560124298,
+          "memory_mb": 92
+        },
+        {
+          "pid": 520,
+          "name": "python3",
+          "memory_percent": 0.23241804833803256,
+          "memory_mb": 36
+        },
+        {
+          "pid": 1841,
+          "name": "snapd",
+          "memory_percent": 0.2280625168869122,
+          "memory_mb": 36
+        },
+        {
+          "pid": 290,
+          "name": "unattended-upgr",
+          "memory_percent": 0.12992771786392926,
+          "memory_mb": 20
+        }
+      ]
+    },
+    "temperatures": {},
+    "boot_time": 1751216489.0
   }
 ]

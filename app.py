@@ -9,6 +9,9 @@ import shutil
 import platform
 import time
 import gc
+import hashlib
+import stat
+from collections import defaultdict
 from metrics import SystemMetrics
 
 class SystemOptimizer:
@@ -973,6 +976,508 @@ class SystemOptimizer:
         else:
             return f"{segundos_rest}s"
     
+    def analisar_uso_disco_detalhado(self, caminho: str = None) -> Dict:
+        """Analisa uso detalhado do disco."""
+        if not caminho:
+            caminho = 'C:\\' if self.is_windows else '/'
+        
+        try:
+            self.logger.info(f"Analisando uso de disco em: {caminho}")
+            
+            # Informações básicas do disco
+            disk_usage = psutil.disk_usage(caminho)
+            
+            # Análise de diretórios grandes
+            diretorios_grandes = self._analisar_diretorios_grandes(caminho)
+            
+            # Análise de tipos de arquivo
+            tipos_arquivo = self._analisar_tipos_arquivo(caminho)
+            
+            # Análise de arquivos antigos
+            arquivos_antigos = self._analisar_arquivos_antigos(caminho)
+            
+            # Análise de arquivos duplicados (sample)
+            duplicados_sample = self._analisar_duplicados_sample(caminho)
+            
+            return {
+                'caminho': caminho,
+                'espaco_total_gb': disk_usage.total // (1024**3),
+                'espaco_usado_gb': disk_usage.used // (1024**3),
+                'espaco_livre_gb': disk_usage.free // (1024**3),
+                'percentual_uso': (disk_usage.used / disk_usage.total) * 100,
+                'diretorios_grandes': diretorios_grandes,
+                'tipos_arquivo': tipos_arquivo,
+                'arquivos_antigos': arquivos_antigos,
+                'duplicados_sample': duplicados_sample,
+                'recomendacoes': self._gerar_recomendacoes_disco(disk_usage, diretorios_grandes, arquivos_antigos)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Erro na análise de disco: {e}")
+            return {}
+    
+    def _analisar_diretorios_grandes(self, caminho: str, limite_gb: float = 1.0) -> List[Dict]:
+        """Analisa diretórios que ocupam muito espaço."""
+        diretorios_grandes = []
+        limite_bytes = limite_gb * 1024**3
+        
+        try:
+            # Diretórios comuns para verificar
+            diretorios_verificar = []
+            
+            if self.is_windows:
+                diretorios_verificar = [
+                    os.path.join(caminho, 'Users'),
+                    os.path.join(caminho, 'Program Files'),
+                    os.path.join(caminho, 'Program Files (x86)'),
+                    os.path.join(caminho, 'Windows'),
+                    os.path.join(caminho, 'ProgramData')
+                ]
+            else:
+                diretorios_verificar = [
+                    '/home', '/usr', '/var', '/opt', '/tmp'
+                ]
+            
+            for diretorio in diretorios_verificar:
+                if os.path.exists(diretorio):
+                    try:
+                        tamanho = self._calcular_tamanho_diretorio(diretorio)
+                        if tamanho > limite_bytes:
+                            diretorios_grandes.append({
+                                'caminho': diretorio,
+                                'tamanho_gb': tamanho / (1024**3),
+                                'tamanho_mb': tamanho / (1024**2)
+                            })
+                    except (PermissionError, OSError):
+                        continue
+            
+            # Ordenar por tamanho
+            diretorios_grandes.sort(key=lambda x: x['tamanho_gb'], reverse=True)
+            return diretorios_grandes[:10]  # Top 10
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao analisar diretórios: {e}")
+            return []
+    
+    def _calcular_tamanho_diretorio(self, caminho: str) -> int:
+        """Calcula tamanho total de um diretório."""
+        tamanho_total = 0
+        
+        try:
+            for dirpath, dirnames, filenames in os.walk(caminho):
+                for filename in filenames:
+                    try:
+                        filepath = os.path.join(dirpath, filename)
+                        if os.path.exists(filepath):
+                            tamanho_total += os.path.getsize(filepath)
+                    except (OSError, PermissionError):
+                        continue
+        except (OSError, PermissionError):
+            pass
+            
+        return tamanho_total
+    
+    def _analisar_tipos_arquivo(self, caminho: str) -> Dict:
+        """Analisa distribuição por tipos de arquivo."""
+        tipos = defaultdict(lambda: {'count': 0, 'size': 0})
+        
+        try:
+            # Sample de diretórios para não ser muito lento
+            diretorios_sample = []
+            
+            if self.is_windows:
+                usuario = os.environ.get('USERNAME', 'User')
+                diretorios_sample = [
+                    f"C:\\Users\\{usuario}\\Desktop",
+                    f"C:\\Users\\{usuario}\\Documents",
+                    f"C:\\Users\\{usuario}\\Downloads"
+                ]
+            else:
+                home = os.path.expanduser("~")
+                diretorios_sample = [
+                    os.path.join(home, "Desktop"),
+                    os.path.join(home, "Documents"),
+                    os.path.join(home, "Downloads")
+                ]
+            
+            for diretorio in diretorios_sample:
+                if os.path.exists(diretorio):
+                    for root, dirs, files in os.walk(diretorio):
+                        for file in files[:100]:  # Limitar a 100 arquivos por diretório
+                            try:
+                                filepath = os.path.join(root, file)
+                                if os.path.exists(filepath):
+                                    tamanho = os.path.getsize(filepath)
+                                    extensao = os.path.splitext(file)[1].lower()
+                                    if not extensao:
+                                        extensao = '[sem extensão]'
+                                    
+                                    tipos[extensao]['count'] += 1
+                                    tipos[extensao]['size'] += tamanho
+                            except (OSError, PermissionError):
+                                continue
+                        break  # Não recursivo para sample
+            
+            # Converter para formato mais legível
+            resultado = {}
+            for ext, data in tipos.items():
+                resultado[ext] = {
+                    'arquivos': data['count'],
+                    'tamanho_mb': data['size'] / (1024**2)
+                }
+            
+            return dict(sorted(resultado.items(), key=lambda x: x[1]['tamanho_mb'], reverse=True)[:15])
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao analisar tipos de arquivo: {e}")
+            return {}
+    
+    def _analisar_arquivos_antigos(self, caminho: str, dias: int = 365) -> Dict:
+        """Analisa arquivos antigos que podem ser removidos."""
+        import time
+        
+        arquivos_antigos = []
+        tamanho_total = 0
+        cutoff_time = time.time() - (dias * 24 * 60 * 60)
+        
+        try:
+            # Diretórios para verificar arquivos antigos
+            diretorios_temp = []
+            
+            if self.is_windows:
+                diretorios_temp = [
+                    os.path.expandvars('%TEMP%'),
+                    os.path.expandvars('%WINDIR%\\Temp'),
+                    os.path.expandvars('%USERPROFILE%\\Downloads')
+                ]
+            else:
+                diretorios_temp = [
+                    '/tmp',
+                    '/var/tmp',
+                    os.path.expanduser('~/Downloads')
+                ]
+            
+            for diretorio in diretorios_temp:
+                if os.path.exists(diretorio):
+                    for root, dirs, files in os.walk(diretorio):
+                        for file in files:
+                            try:
+                                filepath = os.path.join(root, file)
+                                if os.path.exists(filepath):
+                                    stat_info = os.stat(filepath)
+                                    if stat_info.st_mtime < cutoff_time:
+                                        tamanho = stat_info.st_size
+                                        arquivos_antigos.append({
+                                            'arquivo': filepath,
+                                            'tamanho_mb': tamanho / (1024**2),
+                                            'dias_antigo': int((time.time() - stat_info.st_mtime) / (24 * 60 * 60))
+                                        })
+                                        tamanho_total += tamanho
+                                        
+                                        if len(arquivos_antigos) >= 50:  # Limitar sample
+                                            break
+                            except (OSError, PermissionError):
+                                continue
+                        if len(arquivos_antigos) >= 50:
+                            break
+                    if len(arquivos_antigos) >= 50:
+                        break
+            
+            return {
+                'total_arquivos': len(arquivos_antigos),
+                'tamanho_total_mb': tamanho_total / (1024**2),
+                'sample_arquivos': sorted(arquivos_antigos, key=lambda x: x['tamanho_mb'], reverse=True)[:10]
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao analisar arquivos antigos: {e}")
+            return {}
+    
+    def _analisar_duplicados_sample(self, caminho: str) -> Dict:
+        """Analisa sample de arquivos duplicados."""
+        hashes = defaultdict(list)
+        duplicados = []
+        tamanho_duplicado = 0
+        
+        try:
+            # Sample em diretório de usuário
+            if self.is_windows:
+                usuario = os.environ.get('USERNAME', 'User')
+                sample_dir = f"C:\\Users\\{usuario}\\Documents"
+            else:
+                sample_dir = os.path.expanduser("~/Documents")
+            
+            if os.path.exists(sample_dir):
+                arquivos_verificados = 0
+                for root, dirs, files in os.walk(sample_dir):
+                    for file in files:
+                        if arquivos_verificados >= 100:  # Limitar para performance
+                            break
+                            
+                        filepath = os.path.join(root, file)
+                        try:
+                            if os.path.exists(filepath) and os.path.getsize(filepath) > 1024:  # > 1KB
+                                file_hash = self._calcular_hash_arquivo(filepath)
+                                if file_hash:
+                                    hashes[file_hash].append({
+                                        'caminho': filepath,
+                                        'tamanho': os.path.getsize(filepath)
+                                    })
+                                    arquivos_verificados += 1
+                        except (OSError, PermissionError):
+                            continue
+                    if arquivos_verificados >= 100:
+                        break
+                
+                # Encontrar duplicados
+                for file_hash, arquivos in hashes.items():
+                    if len(arquivos) > 1:
+                        tamanho = arquivos[0]['tamanho']
+                        espaco_desperdicado = tamanho * (len(arquivos) - 1)
+                        tamanho_duplicado += espaco_desperdicado
+                        
+                        duplicados.append({
+                            'arquivos': [arq['caminho'] for arq in arquivos],
+                            'tamanho_mb': tamanho / (1024**2),
+                            'copias': len(arquivos),
+                            'espaco_desperdicado_mb': espaco_desperdicado / (1024**2)
+                        })
+            
+            return {
+                'grupos_duplicados': len(duplicados),
+                'tamanho_desperdicado_mb': tamanho_duplicado / (1024**2),
+                'sample_duplicados': sorted(duplicados, key=lambda x: x['espaco_desperdicado_mb'], reverse=True)[:5]
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao analisar duplicados: {e}")
+            return {}
+    
+    def _calcular_hash_arquivo(self, filepath: str) -> Optional[str]:
+        """Calcula hash MD5 de um arquivo."""
+        try:
+            hash_md5 = hashlib.md5()
+            with open(filepath, 'rb') as f:
+                # Ler apenas os primeiros 64KB para performance
+                chunk = f.read(65536)
+                if chunk:
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except (OSError, PermissionError):
+            return None
+    
+    def _gerar_recomendacoes_disco(self, disk_usage, diretorios_grandes: List, arquivos_antigos: Dict) -> List[str]:
+        """Gera recomendações para otimização de disco."""
+        recomendacoes = []
+        percentual_uso = (disk_usage.used / disk_usage.total) * 100
+        
+        if percentual_uso > 90:
+            recomendacoes.append("[!] CRÍTICO: Disco com mais de 90% de uso! Libere espaço urgentemente.")
+        elif percentual_uso > 80:
+            recomendacoes.append("[!] ALTO: Disco com mais de 80% de uso. Considere limpeza.")
+        
+        if diretorios_grandes:
+            maior_dir = diretorios_grandes[0]
+            recomendacoes.append(f"[D] Maior diretório: {os.path.basename(maior_dir['caminho'])} ({maior_dir['tamanho_gb']:.1f}GB)")
+        
+        arquivos_antigos_mb = arquivos_antigos.get('tamanho_total_mb', 0)
+        if arquivos_antigos_mb > 500:
+            recomendacoes.append(f"[T] {arquivos_antigos_mb:.0f}MB em arquivos antigos podem ser removidos")
+        
+        if percentual_uso < 50:
+            recomendacoes.append("[OK] Uso de disco dentro do normal")
+        
+        return recomendacoes
+    
+    def otimizar_disco_avancado(self, limpar_antigos: bool = False, 
+                               remover_duplicados: bool = False,
+                               desfragmentar: bool = False) -> bool:
+        """Executa otimização avançada de disco."""
+        self.logger.info("Iniciando otimização avançada de disco...")
+        
+        try:
+            sucesso = True
+            
+            # 1. Análise inicial
+            analise = self.analisar_uso_disco_detalhado()
+            if not analise:
+                self.logger.error("Falha na análise inicial do disco")
+                return False
+            
+            # 2. Limpeza de arquivos temporários avançada
+            sucesso &= self._limpeza_temporarios_avancada()
+            
+            # 3. Limpeza de cache de sistema
+            sucesso &= self._limpeza_cache_avancada()
+            
+            # 4. Limpeza de arquivos antigos (se solicitado)
+            if limpar_antigos:
+                sucesso &= self._limpar_arquivos_antigos()
+            
+            # 5. Remoção de duplicados (se solicitado)
+            if remover_duplicados:
+                sucesso &= self._remover_duplicados_seguros()
+            
+            # 6. Desfragmentação (se solicitado e Windows)
+            if desfragmentar and self.is_windows:
+                sucesso &= self._desfragmentar_disco()
+            
+            # 7. Otimização de índices
+            sucesso &= self._otimizar_indices_sistema()
+            
+            self.logger.info("Otimização de disco concluída")
+            return sucesso
+            
+        except Exception as e:
+            self.logger.error(f"Erro na otimização de disco: {e}")
+            return False
+    
+    def _limpeza_temporarios_avancada(self) -> bool:
+        """Limpeza avançada de arquivos temporários."""
+        try:
+            if self.is_windows:
+                comandos = [
+                    ('del /q /s %temp%\\*.tmp 2>nul', 'Arquivos .tmp'),
+                    ('del /q /s %temp%\\*.log 2>nul', 'Logs temporários'),
+                    ('del /q /s %windir%\\Temp\\*.* 2>nul', 'Temp do Windows'),
+                    ('del /q /s "%USERPROFILE%\\AppData\\Local\\Temp\\*.*" 2>nul', 'Temp do usuário')
+                ]
+            else:
+                comandos = [
+                    ('find /tmp -type f -atime +7 -delete 2>/dev/null', 'Arquivos antigos em /tmp'),
+                    ('find /var/tmp -type f -atime +7 -delete 2>/dev/null', 'Arquivos antigos em /var/tmp'),
+                    ('rm -rf ~/.cache/thumbnails/* 2>/dev/null', 'Cache de thumbnails')
+                ]
+            
+            sucesso = True
+            for comando, desc in comandos:
+                if not self._executar_comando(comando, f'Limpeza: {desc}'):
+                    sucesso = False
+            
+            return sucesso
+            
+        except Exception as e:
+            self.logger.error(f"Erro na limpeza avançada: {e}")
+            return False
+    
+    def _limpeza_cache_avancada(self) -> bool:
+        """Limpeza avançada de cache do sistema."""
+        try:
+            if self.is_windows:
+                comandos = [
+                    ('ipconfig /flushdns', 'Cache DNS'),
+                    ('del /q /s "%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer\\*.db" 2>nul', 'Cache Explorer'),
+                    ('del /q /s "%APPDATA%\\Microsoft\\Windows\\Recent\\*.*" 2>nul', 'Arquivos recentes')
+                ]
+            else:
+                comandos = [
+                    ('sync && echo 3 | sudo tee /proc/sys/vm/drop_caches 2>/dev/null', 'Cache do kernel'),
+                    ('rm -rf ~/.cache/* 2>/dev/null', 'Cache do usuário'),
+                    ('sudo updatedb 2>/dev/null', 'Atualizar índice locate')
+                ]
+            
+            sucesso = True
+            for comando, desc in comandos:
+                if not self._executar_comando_sudo_opcional(comando, f'Cache: {desc}'):
+                    sucesso = False
+            
+            return sucesso
+            
+        except Exception as e:
+            self.logger.error(f"Erro na limpeza de cache: {e}")
+            return False
+    
+    def _limpar_arquivos_antigos(self) -> bool:
+        """Remove arquivos antigos seguros."""
+        try:
+            self.logger.info("Removendo arquivos antigos...")
+            
+            if self.is_windows:
+                # Limpar Downloads antigos (>30 dias)
+                downloads = os.path.expanduser("~/Downloads")
+                if os.path.exists(downloads):
+                    comando = f'forfiles /p "{downloads}" /s /m *.* /d -30 /c "cmd /c del @path" 2>nul'
+                    self._executar_comando(comando, 'Arquivos antigos em Downloads')
+            else:
+                # Limpar arquivos antigos em diretórios seguros
+                home = os.path.expanduser("~")
+                downloads = os.path.join(home, "Downloads")
+                if os.path.exists(downloads):
+                    comando = f'find "{downloads}" -type f -mtime +30 -delete 2>/dev/null'
+                    self._executar_comando(comando, 'Arquivos antigos em Downloads')
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao limpar arquivos antigos: {e}")
+            return False
+    
+    def _remover_duplicados_seguros(self) -> bool:
+        """Remove duplicados em diretórios seguros."""
+        self.logger.info("Análise de duplicados em diretórios seguros...")
+        # Por segurança, apenas reportar duplicados, não remover automaticamente
+        duplicados = self._analisar_duplicados_sample(".")
+        
+        if duplicados.get('grupos_duplicados', 0) > 0:
+            self.logger.info(f"Encontrados {duplicados['grupos_duplicados']} grupos de duplicados")
+            self.logger.info(f"Espaço desperdiçado: {duplicados['tamanho_desperdicado_mb']:.1f}MB")
+            self.logger.info("Sugestão: Revise manualmente os duplicados reportados")
+        
+        return True
+    
+    def _desfragmentar_disco(self) -> bool:
+        """Executa desfragmentação no Windows."""
+        try:
+            if not self.is_windows:
+                return True
+            
+            # Verificar se é SSD (não desfragmentar SSDs)
+            try:
+                result = subprocess.run(
+                    'wmic diskdrive get MediaType /format:csv',
+                    shell=True, capture_output=True, text=True
+                )
+                if 'SSD' in result.stdout:
+                    self.logger.info("SSD detectado - pulando desfragmentação")
+                    return True
+            except:
+                pass
+            
+            # Desfragmentar disco C:
+            comando = 'defrag C: /A /H'  # Análise apenas, não desfragmentação completa
+            return self._executar_comando(comando, 'Análise de fragmentação')
+            
+        except Exception as e:
+            self.logger.error(f"Erro na desfragmentação: {e}")
+            return False
+    
+    def _otimizar_indices_sistema(self) -> bool:
+        """Otimiza índices do sistema."""
+        try:
+            if self.is_windows:
+                # Reconstruir índice de pesquisa do Windows
+                comandos = [
+                    ('sc stop "WSearch"', 'Parando serviço de busca'),
+                    ('sc start "WSearch"', 'Reiniciando serviço de busca')
+                ]
+            else:
+                # Atualizar bases de dados do sistema
+                comandos = [
+                    ('sudo updatedb 2>/dev/null', 'Atualizando base locate'),
+                    ('sudo mandb 2>/dev/null', 'Atualizando base man pages')
+                ]
+            
+            sucesso = True
+            for comando, desc in comandos:
+                if not self._executar_comando_sudo_opcional(comando, desc):
+                    sucesso = False
+            
+            return sucesso
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao otimizar índices: {e}")
+            return False
+    
     def limpar_prefetch(self) -> bool:
         """Limpa arquivos prefetch (Windows) ou equivalentes (Linux)."""
         if self.is_windows:
@@ -1005,6 +1510,7 @@ class SystemOptimizer:
             (self.limpar_temporarios, "Limpeza de temporários"),
             (self.limpar_cache_sistema, "Limpeza cache do sistema"),
             (self.otimizar_memoria_ram, "Otimização avançada de RAM"),
+            (lambda: self.otimizar_disco_avancado(limpar_antigos=True), "Otimização avançada de disco"),
             (self.atualizar_pacotes, "Atualização de pacotes"),
             (self.verificar_integridade, "Verificação de integridade"),
             (self.limpar_prefetch, "Limpeza de cache adicional"),
