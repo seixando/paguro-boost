@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(snap install:*)",
+      "Bash(tar:*)",
+      "Bash(mv:*)",
+      "Bash(./gh auth login)",
+      "Bash(rm:*)",
+      "Bash(gh auth:*)",
+      "Bash(chsh:*)",
+      "Bash(zsh:*)",
+      "Bash(python3:*)"
+    ],
+    "deny": []
+  }
+}

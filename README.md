@@ -1,17 +1,49 @@
 # Paguro Boost 🦀⚡
 
-Um otimizador de sistema cross-platform que funciona tanto no Windows quanto no Linux/WSL.
+[![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](https://github.com/paguro-team/paguro-boost)
+[![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://python.org)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20WSL-lightgrey.svg)](https://github.com/paguro-team/paguro-boost)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Características
+A modern, cross-platform system optimizer with a retro GUI interface that provides advanced RAM optimization, disk cleanup, startup management, and performance monitoring.
 
-- 🖥️ **Interface Gráfica Moderna** com opções avançadas
-- 🔍 **Detecção automática** do sistema operacional
-- 🧹 **Limpeza de arquivos temporários** e cache
-- 📦 **Atualização automática** de pacotes (winget/apt/yum/dnf)
-- 🔧 **Verificação de integridade** do sistema
-- 🛡️ **Scan de vírus** opcional
-- 📊 **Monitoramento em tempo real** (CPU, memória, disco)
-- ⚙️ **Operações seletivas** - escolha o que otimizar
+## ✨ Features
+
+### 🎮 Retro GUI Interface
+- **80s/90s aesthetic** with green phosphorescent theme
+- **Real-time monitoring** with ASCII progress bars
+- **Terminal-style logs** with timestamps
+- **Modern functionality** with vintage appearance
+
+### 🧠 Advanced RAM Optimization
+- **Process analysis** with memory usage breakdown
+- **DNS cache clearing** for improved network performance
+- **Working sets optimization** (Windows) and memory compaction (Linux)
+- **Intelligent recommendations** based on system analysis
+
+### 📊 Performance Monitoring
+- **Historical metrics** stored in JSON format
+- **Continuous monitoring** with configurable intervals
+- **Stability scoring** and usage pattern analysis
+- **Detailed performance reports** with trend analysis
+
+### 🚀 Startup Optimization
+- **Program classification** (Essential/Important/Optional/Unknown)
+- **Boot time estimation** and measurement
+- **Safe optimization** with user confirmation
+- **Cross-platform startup analysis**
+
+### 💽 Disk Optimization
+- **Detailed space analysis** with directory size breakdown
+- **Duplicate file detection** using MD5 hashing
+- **Old file identification** with configurable age thresholds
+- **Smart defragmentation** (Windows only, SSD-aware)
+
+### 🛡️ Safety & Security
+- **Administrator privileges** handled safely
+- **Backup creation** before critical operations
+- **Comprehensive logging** with rotation
+- **Safe mode** for critical system areas
 
 ## Instalação
 

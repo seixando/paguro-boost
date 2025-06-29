@@ -3,7 +3,7 @@
 Script de teste das funcionalidades do Paguro Boost
 """
 
-from app import SystemOptimizer
+from paguro_boost.app import SystemOptimizer
 import time
 
 def testar_funcionalidades():

@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox, scrolledtext
 import threading
 import queue
 import sys
-from app import SystemOptimizer
+from .app import SystemOptimizer
 
 
 class PaguroBoostGUI:

@@ -12,7 +12,7 @@ import gc
 import hashlib
 import stat
 from collections import defaultdict
-from metrics import SystemMetrics
+from .metrics import SystemMetrics
 
 class SystemOptimizer:
     def __init__(self):

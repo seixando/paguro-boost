@@ -4,7 +4,7 @@
 Demonstração de todas as 5 etapas implementadas
 """
 
-from app import SystemOptimizer
+from paguro_boost.app import SystemOptimizer
 import time
 
 def exibir_banner():
