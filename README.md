@@ -4,12 +4,14 @@ Um otimizador de sistema cross-platform que funciona tanto no Windows quanto no 
 
 ## Características
 
+- 🖥️ **Interface Gráfica Moderna** com opções avançadas
 - 🔍 **Detecção automática** do sistema operacional
 - 🧹 **Limpeza de arquivos temporários** e cache
 - 📦 **Atualização automática** de pacotes (winget/apt/yum/dnf)
 - 🔧 **Verificação de integridade** do sistema
 - 🛡️ **Scan de vírus** opcional
-- 📊 **Monitoramento de recursos** (CPU, memória, disco)
+- 📊 **Monitoramento em tempo real** (CPU, memória, disco)
+- ⚙️ **Operações seletivas** - escolha o que otimizar
 
 ## Instalação
 
@@ -21,8 +23,21 @@ pip install -r requirements.txt
 
 ## Uso
 
+### Interface Gráfica (Padrão)
 ```bash
 python app.py
+# ou explicitamente
+python app.py --gui
+```
+
+### Linha de Comando (CLI)
+```bash
+python app.py --cli
+```
+
+### Apenas GUI
+```bash
+python gui.py
 ```
 
 ## Suporte

@@ -85,3 +85,85 @@ sudo: a password is required
 2025-06-29 15:44:33,021 - INFO - Variação Memória: 0.00%
 2025-06-29 15:44:33,022 - INFO - Variação Disco: 0.00%
 2025-06-29 15:44:33,022 - INFO - Recomendação: Reinicie o sistema para melhor desempenho.
+2025-06-29 17:15:01,632 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 17:15:03,665 - INFO - CPU: 0.8% | Memória: 6.1% | Disco: 0.4%
+2025-06-29 17:15:13,149 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 17:15:14,756 - INFO - Gerenciadores encontrados: apt, snap
+2025-06-29 17:15:14,757 - INFO - === Iniciando otimização do sistema ===
+2025-06-29 17:15:14,757 - INFO - Medições antes da limpeza:
+2025-06-29 17:15:15,759 - INFO - CPU: 1.5% | Memória: 6.1% | Disco: 0.4%
+2025-06-29 17:15:15,759 - INFO - Executando rotinas de limpeza e otimização:
+2025-06-29 17:15:15,777 - WARNING - Limpeza /tmp - Aviso: 
+2025-06-29 17:15:15,785 - WARNING - Limpeza /var/tmp - Aviso: 
+2025-06-29 17:15:15,788 - INFO - Limpeza cache do usuário - Sucesso
+2025-06-29 17:15:15,798 - WARNING - Limpeza cache APT - Aviso: 
+2025-06-29 17:15:15,808 - WARNING - Remoção pacotes órfãos - Aviso: 
+2025-06-29 17:15:15,817 - WARNING - Limpeza logs do sistema - Aviso: 
+2025-06-29 17:15:15,817 - INFO - Iniciando otimização avançada de RAM...
+2025-06-29 17:15:15,818 - INFO - RAM inicial: 6.1% (0.0GB usada)
+2025-06-29 17:15:15,831 - WARNING - Reiniciando systemd-resolved - Aviso: 
+2025-06-29 17:15:15,841 - WARNING - Reiniciando nscd - Aviso: 
+2025-06-29 17:15:15,851 - WARNING - Reiniciando networking - Aviso: 
+2025-06-29 17:15:15,854 - INFO - Linux: Serviços em background mantidos por segurança
+2025-06-29 17:15:15,866 - WARNING - Limpeza page cache - Aviso: 
+2025-06-29 17:15:15,874 - WARNING - Limpeza dentries/inodes - Aviso: 
+2025-06-29 17:15:15,884 - WARNING - Limpeza cache completa - Aviso: 
+2025-06-29 17:15:15,894 - WARNING - Compactação de memória - Aviso: 
+2025-06-29 17:15:17,897 - INFO - RAM final: 6.1% (0.0GB usada)
+2025-06-29 17:15:17,901 - INFO - Memória liberada: -2MB
+2025-06-29 17:15:17,911 - WARNING - Atualizando lista de pacotes - Aviso: sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+
+2025-06-29 17:15:17,920 - WARNING - Configuração pacotes quebrados - Aviso: 
+2025-06-29 17:15:17,930 - WARNING - Correção dependências - Aviso: 
+2025-06-29 17:15:17,934 - INFO - Limpeza thumbnails e cache de ícones - Sucesso
+2025-06-29 17:15:18,143 - INFO - Nenhum antivírus encontrado (clamscan/rkhunter)
+2025-06-29 17:15:18,144 - INFO - Medições após a limpeza:
+2025-06-29 17:15:19,146 - INFO - CPU: 1.1% | Memória: 6.1% | Disco: 0.4%
+2025-06-29 17:15:19,146 - INFO - === Relatório de Otimização ===
+2025-06-29 17:15:19,147 - INFO - Variação CPU: 0.40%
+2025-06-29 17:15:19,147 - INFO - Variação Memória: 0.00%
+2025-06-29 17:15:19,148 - INFO - Variação Disco: 0.00%
+2025-06-29 17:15:19,148 - INFO - Recomendação: Reinicie o sistema para melhor desempenho.
+2025-06-29 17:15:54,890 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 17:15:56,916 - INFO - CPU: 1.3% | Memória: 6.3% | Disco: 0.4%
+2025-06-29 17:15:58,006 - INFO - Iniciando monitoramento contínuo (intervalo: 5s)
+2025-06-29 17:16:00,009 - INFO - Parando monitoramento contínuo
+2025-06-29 17:16:02,010 - INFO - Gerando relatório de performance (1h)
+2025-06-29 17:18:21,861 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 17:18:23,896 - INFO - CPU: 0.5% | Memória: 6.1% | Disco: 0.4%
+2025-06-29 17:18:37,295 - INFO - Iniciando monitoramento contínuo (intervalo: 30s)
+2025-06-29 17:18:43,221 - INFO - Parando monitoramento contínuo
+2025-06-29 17:20:09,752 - INFO - Gerenciadores encontrados: apt, snap
+2025-06-29 17:20:10,755 - INFO - CPU: 3.5% | Memória: 6.6% | Disco: 0.4%
+2025-06-29 17:22:58,765 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 17:23:00,809 - INFO - CPU: 0.9% | Memória: 7.1% | Disco: 0.4%
+2025-06-29 17:28:53,462 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 17:28:53,463 - INFO - Sistema detectado: Linux (WSL)
+2025-06-29 17:28:55,536 - INFO - CPU: 0.5% | Memória: 6.2% | Disco: 0.4%
+2025-06-29 17:28:55,537 - INFO - CPU: 0.5% | Memória: 6.2% | Disco: 0.4%
+2025-06-29 17:28:58,543 - INFO - CPU: 0.3% | Memória: 6.3% | Disco: 0.4%
+2025-06-29 17:29:01,548 - INFO - CPU: 3.5% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:04,553 - INFO - CPU: 0.5% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:07,557 - INFO - CPU: 0.7% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:10,566 - INFO - CPU: 0.5% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:13,571 - INFO - CPU: 0.4% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:16,575 - INFO - CPU: 0.5% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:19,580 - INFO - CPU: 0.6% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:19,761 - INFO - Iniciando monitoramento contínuo (intervalo: 30s)
+2025-06-29 17:29:22,584 - INFO - CPU: 0.5% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:25,589 - INFO - CPU: 0.5% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:28,593 - INFO - CPU: 0.5% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:31,598 - INFO - CPU: 0.4% | Memória: 6.0% | Disco: 0.4%
+2025-06-29 17:29:34,703 - INFO - CPU: 0.7% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:37,708 - INFO - CPU: 0.6% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:40,712 - INFO - CPU: 1.4% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:41,980 - INFO - Parando monitoramento contínuo
+2025-06-29 17:29:44,993 - INFO - CPU: 0.7% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:47,998 - INFO - CPU: 0.7% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:51,003 - INFO - CPU: 0.7% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:54,008 - INFO - CPU: 0.7% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:29:57,012 - INFO - CPU: 0.7% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:30:00,016 - INFO - CPU: 1.0% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:30:01,877 - INFO - CPU: 0.9% | Memória: 5.9% | Disco: 0.4%
+2025-06-29 17:30:03,023 - INFO - CPU: 2.5% | Memória: 5.9% | Disco: 0.4%
