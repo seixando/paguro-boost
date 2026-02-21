@@ -317,6 +317,88 @@ class SystemOptimizer:
         
         return sucesso
     
+    def listar_bloatware_instalado(self) -> List[str]:
+        """Verifica quais pacotes de bloatware seguro estão instalados."""
+        if not self.is_windows:
+            return []
+            
+        pacotes_seguros = [
+            "Microsoft.XboxApp", "Microsoft.ZuneMusic", "Microsoft.ZuneVideo",
+            "Microsoft.MicrosoftSolitaireCollection", "Microsoft.BingFinance",
+            "Microsoft.BingNews", "Microsoft.Microsoft3DViewer",
+            "Microsoft.MixedReality.Portal", "Microsoft.SkypeApp",
+            "Microsoft.WindowsFeedbackHub", "Microsoft.Getstarted", "Microsoft.People",
+            "Microsoft.YourPhone"
+        ]
+        
+        instalados = []
+        comando = 'powershell -Command "Get-AppxPackage | Select-Object -ExpandProperty Name"'
+        try:
+            result = subprocess.run(comando, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                output = result.stdout
+                for pct in pacotes_seguros:
+                    if pct in output:
+                        instalados.append(pct)
+        except Exception as e:
+            self.logger.error(f"Erro ao listar bloatware: {e}")
+            
+        return instalados
+
+    def remover_bloatware(self, pacotes: Optional[List[str]] = None) -> Tuple[bool, int]:
+        """Remove bloatware seguro do Windows. Se pacotes for None, usa lista default."""
+        if self.is_windows:
+            return self._remover_bloatware_windows(pacotes)
+        else:
+            self.logger.info("Debloat ignorado (aplicável apenas ao Windows).")
+            return (True, 0)
+            
+    def _remover_bloatware_windows(self, pacotes: Optional[List[str]]) -> Tuple[bool, int]:
+        """Executa PowerShell para remover pacotes AppX desnecessários."""
+        self.logger.info("Iniciando remoção segura de Bloatware no Windows...")
+        pacotes_alvo = pacotes
+        if pacotes_alvo is None:
+            pacotes_alvo = [
+                "Microsoft.XboxApp", "Microsoft.ZuneMusic", "Microsoft.ZuneVideo",
+                "Microsoft.MicrosoftSolitaireCollection", "Microsoft.BingFinance",
+                "Microsoft.BingNews", "Microsoft.Microsoft3DViewer",
+                "Microsoft.MixedReality.Portal", "Microsoft.SkypeApp",
+                "Microsoft.WindowsFeedbackHub", "Microsoft.Getstarted", "Microsoft.People"
+            ]
+        
+        removidos = 0
+        sucesso_geral = True
+        
+        for pacote in pacotes_alvo:
+            comando = f'powershell -Command "Get-AppxPackage *{pacote}* | Remove-AppxPackage"'
+            if self._executar_comando(comando, f"Removendo pacote: {pacote}"):
+                removidos += 1
+            else:
+                sucesso_geral = False
+                
+        self.logger.info(f"Debloat concluído: {removidos} pacotes removidos.")
+        return (sucesso_geral, removidos)
+
+    def desativar_telemetria_windows(self) -> bool:
+        """Desativa a Telemetria e coleta de diagnósticos no Windows via Registro."""
+        if not self.is_windows:
+            return False
+            
+        self.logger.info("Desativando telemetria e rastreamento do Windows...")
+        comandos = [
+            ('reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f', 'Desativar AllowTelemetry'),
+            ('sc config DiagTrack start= disabled', 'Desativar serviço DiagTrack'),
+            ('sc stop DiagTrack', 'Parar serviço DiagTrack immediately')
+        ]
+        
+        sucesso_geral = True
+        for cmd, desc in comandos:
+            # Toleramos erros no 'sc stop' caso o serviço já esteja parado
+            if not self._executar_comando(cmd, desc) and "stop" not in cmd:
+                sucesso_geral = False
+                
+        return sucesso_geral
+
     def otimizar_memoria_ram(self) -> bool:
         """Executa otimização avançada da memória RAM."""
         self.logger.info("Iniciando otimização avançada de RAM...")
