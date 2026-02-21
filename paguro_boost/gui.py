@@ -1,802 +1,615 @@
+import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
+from tkinter import messagebox
 import threading
 import queue
+import time
+import os
 import sys
-from .app import SystemOptimizer
 
+# Attempt to import SystemOptimizer, handle running directly vs package
+try:
+    from .app import SystemOptimizer
+except ImportError:
+    from app import SystemOptimizer
 
-class PaguroBoostGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Paguro Boost 🦀⚡ - Otimizador de Sistema")
-        self.root.geometry("800x600")
-        self.root.resizable(True, True)
+# Configuração Base do CustomTkinter
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("green")
+
+class ProcessLogText(ctk.CTkTextbox):
+    """Terminal Retro Customizado"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.configure(
+            font=ctk.CTkFont(family="Courier", size=12),
+            text_color="#00ff00",
+            fg_color="#050505",
+            border_color="#00ff00",
+            border_width=1,
+            wrap="word"
+        )
+
+class PaguroBoostGUI(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+
+        # Configuração da Janela
+        self.title("Paguro Boost 🦀⚡ - Premium Otimizador")
+        self.geometry("950x650")
+        self.minsize(850, 600)
         
-        # Configurar estilo
-        self.style = ttk.Style()
-        self.style.theme_use('clam')
-        
-        # Configurar cores estilo retro
-        self.root.configure(bg='#000000')
-        self.style.configure('Title.TLabel', font=('Courier', 16, 'bold'), background='#000000', foreground='#00ff00')
-        self.style.configure('Subtitle.TLabel', font=('Courier', 10), background='#000000', foreground='#00aa00')
-        self.style.configure('Custom.TButton', font=('Courier', 10, 'bold'))
-        self.style.configure('Retro.TLabel', font=('Courier', 10), background='#000000', foreground='#00ff00')
-        self.style.configure('Info.TLabel', font=('Courier', 12, 'bold'), background='#000000', foreground='#ffff00')
-        
-        # Inicializar otimizador
+        # Paleta Retro-Hacker Premium
+        self.colors = {
+            "bg": "#050505",
+            "surface": "#111111",
+            "accent": "#00ff00",
+            "accent_hover": "#00cc00",
+            "text": "#00ff00",
+            "text_dim": "#00aa00",
+            "warning": "#ffaa00",
+            "critical": "#ff0000"
+        }
+        self.configure(fg_color=self.colors["bg"])
+
+        # Grid Base -> 1 linha, 2 colunas (Sidebar e Principal)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+        # Estados e Backend
         self.optimizer = None
         self.running = False
         self.monitoring = False
-        
-        # Queue para comunicação entre threads
         self.log_queue = queue.Queue()
-        
-        self.create_widgets()
+
+        # Componentes Principais
+        self.create_sidebar()
+        self.create_main_frames()
+
+        # Iniciar interface e rotinas
+        self.select_frame_by_name("dashboard")
         self.process_log_queue()
-        
-    def create_widgets(self):
-        # Frame principal
-        main_frame = ttk.Frame(self.root, padding="20")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Configurar grid
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
-        main_frame.rowconfigure(4, weight=1)
-        
-        # Título estilo retro
-        title_text = """
- ____                            ____                    _   
-|  _ \\ __ _  __ _ _   _ _ __ ___  | __ )  ___   ___  ___ | |_ 
-| |_) / _` |/ _` | | | | '__/ _ \\|  _ \\ / _ \\ / _ \\/ __|| __|
-|  __/ (_| | (_| | |_| | | | (_) | |_) | (_) | (_) \\__ \\| |_ 
-|_|   \\__,_|\\__, |\\__,_|_|  \\___/|____/ \\___/ \\___/|___/ \\__|
-            |___/                                           
-        """
-        title_label = ttk.Label(main_frame, text=title_text, style='Title.TLabel')
-        title_label.grid(row=0, column=0, columnspan=2, pady=(0, 5))
-        
-        subtitle_label = ttk.Label(main_frame, text=">>> SISTEMA DE OTIMIZAÇÃO CROSS-PLATFORM <<<", style='Subtitle.TLabel')
-        subtitle_label.grid(row=1, column=0, columnspan=2, pady=(0, 10))
-        
-        # Frame de informações do sistema com visual retro
-        info_frame = ttk.LabelFrame(main_frame, text="[STATUS DO SISTEMA]", padding="10")
-        info_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
-        info_frame.columnconfigure(0, weight=1)
-        
-        # Canvas para gráficos retro
-        self.status_canvas = tk.Canvas(info_frame, height=120, bg='#000000', highlightthickness=0)
-        self.status_canvas.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=5)
-        
-        # Labels de informação estilo retro
-        self.os_label = ttk.Label(info_frame, text="SISTEMA: DETECTANDO...", style='Retro.TLabel')
-        self.os_label.grid(row=1, column=0, sticky=tk.W, pady=2)
-        
-        # Frame de controles
-        control_frame = ttk.Frame(main_frame)
-        control_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
-        control_frame.columnconfigure(0, weight=1)
-        control_frame.columnconfigure(1, weight=1)
-        control_frame.columnconfigure(2, weight=1)
-        
-        # Botões de ação
-        self.start_button = ttk.Button(control_frame, text=">> Otimização Completa", 
-                                      command=self.start_optimization, style='Custom.TButton')
-        self.start_button.grid(row=0, column=0, padx=(0, 5), sticky=(tk.W, tk.E))
-        
-        self.refresh_button = ttk.Button(control_frame, text="[!] Atualizar Info", 
-                                        command=self.refresh_system_info, style='Custom.TButton')
-        self.refresh_button.grid(row=0, column=1, padx=5, sticky=(tk.W, tk.E))
-        
-        self.memory_analysis_button = ttk.Button(control_frame, text="[M] Análise RAM", 
-                                               command=self.show_memory_analysis, style='Custom.TButton')
-        self.memory_analysis_button.grid(row=1, column=0, padx=(0, 5), pady=(5, 0), sticky=(tk.W, tk.E))
-        
-        self.performance_report_button = ttk.Button(control_frame, text="[R] Relatório Performance", 
-                                                  command=self.show_performance_report, style='Custom.TButton')
-        self.performance_report_button.grid(row=1, column=1, padx=5, pady=(5, 0), sticky=(tk.W, tk.E))
-        
-        self.disk_analysis_button = ttk.Button(control_frame, text="[D] Análise Disco", 
-                                             command=self.show_disk_analysis, style='Custom.TButton')
-        self.disk_analysis_button.grid(row=2, column=0, padx=(0, 5), pady=(5, 0), sticky=(tk.W, tk.E))
-        
-        self.monitor_toggle_button = ttk.Button(control_frame, text="[>] Iniciar Monitor", 
-                                              command=self.toggle_monitoring, style='Custom.TButton')
-        self.monitor_toggle_button.grid(row=1, column=2, padx=(5, 0), pady=(5, 0), sticky=(tk.W, tk.E))
-        
-        self.stop_button = ttk.Button(control_frame, text="[X] Parar", 
-                                     command=self.stop_optimization, style='Custom.TButton', 
-                                     state='disabled')
-        self.stop_button.grid(row=0, column=2, padx=(5, 0), sticky=(tk.W, tk.E))
-        
-        # Frame de opções avançadas
-        options_frame = ttk.LabelFrame(main_frame, text="Opções de Otimização", padding="5")
-        options_frame.grid(row=4, column=0, sticky=(tk.W, tk.E, tk.N), padx=(0, 10))
-        
-        # Checkboxes para operações
-        self.clean_temp_var = tk.BooleanVar(value=True)
-        self.clean_cache_var = tk.BooleanVar(value=True)
-        self.optimize_ram_var = tk.BooleanVar(value=True)
-        self.update_packages_var = tk.BooleanVar(value=True)
-        self.check_integrity_var = tk.BooleanVar(value=True)
-        self.scan_virus_var = tk.BooleanVar(value=False)
-        
-        ttk.Checkbutton(options_frame, text="[T] Limpar Temporários", 
-                       variable=self.clean_temp_var).grid(row=0, column=0, sticky=tk.W, pady=2)
-        ttk.Checkbutton(options_frame, text="[C] Limpar Cache", 
-                       variable=self.clean_cache_var).grid(row=1, column=0, sticky=tk.W, pady=2)
-        ttk.Checkbutton(options_frame, text="[M] Otimizar RAM", 
-                       variable=self.optimize_ram_var).grid(row=2, column=0, sticky=tk.W, pady=2)
-        ttk.Checkbutton(options_frame, text="[U] Atualizar Pacotes", 
-                       variable=self.update_packages_var).grid(row=3, column=0, sticky=tk.W, pady=2)
-        ttk.Checkbutton(options_frame, text="[I] Verificar Integridade", 
-                       variable=self.check_integrity_var).grid(row=4, column=0, sticky=tk.W, pady=2)
-        ttk.Checkbutton(options_frame, text="[V] Scan de Vírus", 
-                       variable=self.scan_virus_var).grid(row=5, column=0, sticky=tk.W, pady=2)
-        
-        self.disk_optimization_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(options_frame, text="[D] Otimizar Disco", 
-                       variable=self.disk_optimization_var).grid(row=6, column=0, sticky=tk.W, pady=2)
-        
-        # Log de saída estilo terminal retro
-        log_frame = ttk.LabelFrame(main_frame, text="[TERMINAL DE OPERAÇÕES]", padding="5")
-        log_frame.grid(row=4, column=1, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(10, 0))
-        log_frame.columnconfigure(0, weight=1)
-        log_frame.rowconfigure(0, weight=1)
-        
-        self.log_text = scrolledtext.ScrolledText(log_frame, height=15, width=50, 
-                                                 wrap=tk.WORD, font=('Courier', 9),
-                                                 bg='#000000', fg='#00ff00',
-                                                 insertbackground='#00ff00',
-                                                 selectbackground='#00aa00')
-        self.log_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Adicionar mensagem de boas-vindas estilo terminal
-        welcome_msg = """
-┌─────────────────────────────────────────────────┐
-│          PAGURO BOOST TERMINAL v2.0             │
-│                                                 │
-│  Sistema pronto para otimização...              │
-│  Digite comandos ou use a interface gráfica     │
-└─────────────────────────────────────────────────┘
-
-[SYSTEM] Terminal inicializado com sucesso.
-[READY] Aguardando comandos...
-
-"""
-        self.log_text.insert(tk.END, welcome_msg)
-        
-        # Barra de progresso
-        self.progress = ttk.Progressbar(main_frame, mode='indeterminate')
-        self.progress.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
-        
-        # Inicializar informações do sistema
         self.refresh_system_info()
-        
-        # Iniciar atualização contínua dos gráficos
         self.update_retro_display()
+
+    def create_sidebar(self):
+        self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color=self.colors["surface"])
+        self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
+        self.sidebar_frame.grid_rowconfigure(5, weight=1)
+
+        # Logo / Título
+        self.logo_label = ctk.CTkLabel(
+            self.sidebar_frame, 
+            text="PAGURO\nBOOST ⚡", 
+            font=ctk.CTkFont(family="Courier", size=24, weight="bold"),
+            text_color=self.colors["accent"]
+        )
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(30, 30))
+
+        # Botões de Navegação
+        self.nav_btns = {}
         
+        btn_configs = [
+            ("dashboard", "📊 Dashboard"),
+            ("optimizer", "⚡ Otimizador"),
+            ("analysis", "🔍 Análises Gerais")
+        ]
+
+        for idx, (name, text) in enumerate(btn_configs, start=1):
+            btn = ctk.CTkButton(
+                self.sidebar_frame, text=text,
+                font=ctk.CTkFont(family="Courier", size=14, weight="bold"),
+                fg_color="transparent", text_color=self.colors["text"],
+                hover_color=self.colors["surface"], anchor="w",
+                command=lambda n=name: self.select_frame_by_name(n)
+            )
+            btn.grid(row=idx, column=0, padx=10, pady=10, sticky="ew")
+            self.nav_btns[name] = btn
+
+        # Info de Sistema no Rodapé do Sidebar
+        self.os_label = ctk.CTkLabel(
+            self.sidebar_frame, text="SISTEMA:\nDETECTANDO...", 
+            font=ctk.CTkFont(family="Courier", size=12),
+            text_color=self.colors["text_dim"]
+        )
+        self.os_label.grid(row=6, column=0, padx=20, pady=20, sticky="s")
+
+
+    def create_main_frames(self):
+        self.frames = {}
+        
+        # --- FRAME 1: Dashboard ---
+        self.frames["dashboard"] = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.frames["dashboard"].grid_columnconfigure(0, weight=1)
+        self.frames["dashboard"].grid_rowconfigure(1, weight=1)
+        
+        # Título
+        ctk.CTkLabel(
+            self.frames["dashboard"], text=">>> MONITOR DO SISTEMA <<<",
+            font=ctk.CTkFont(family="Courier", size=20, weight="bold"),
+            text_color=self.colors["accent"]
+        ).grid(row=0, column=0, padx=20, pady=(20, 10), sticky="nw")
+
+        # Container dos Gráficos
+        self.monitor_frame = ctk.CTkFrame(self.frames["dashboard"], fg_color=self.colors["surface"], corner_radius=10)
+        self.monitor_frame.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        self.monitor_frame.grid_columnconfigure(1, weight=1)
+        
+        # Barras de Progresso
+        self.progress_bars = {}
+        self.progress_labels = {}
+        
+        resources = [("CPU", 0), ("RAM", 1), ("HDD", 2)]
+        for label, row in resources:
+            title = ctk.CTkLabel(self.monitor_frame, text=f"{label}:", font=ctk.CTkFont(family="Courier", size=16, weight="bold"), text_color=self.colors["accent"])
+            title.grid(row=row, column=0, padx=(20, 10), pady=30, sticky="w")
+            
+            pbar = ctk.CTkProgressBar(self.monitor_frame, height=20, progress_color=self.colors["accent"], fg_color="#222222")
+            pbar.grid(row=row, column=1, padx=10, pady=30, sticky="ew")
+            pbar.set(0)
+            
+            value_label = ctk.CTkLabel(self.monitor_frame, text="0.0%", font=ctk.CTkFont(family="Courier", size=16, weight="bold"), text_color=self.colors["accent"])
+            value_label.grid(row=row, column=2, padx=(10, 20), pady=30, sticky="e")
+            
+            self.progress_bars[label.lower()] = pbar
+            self.progress_labels[label.lower()] = value_label
+            
+        # Controles do Monitor
+        monitor_ctrls = ctk.CTkFrame(self.frames["dashboard"], fg_color="transparent")
+        monitor_ctrls.grid(row=2, column=0, padx=20, pady=20, sticky="e")
+        
+        self.monitor_btn = ctk.CTkButton(
+            monitor_ctrls, text="[>] INICIAR MONITOR LOG", 
+            font=ctk.CTkFont(family="Courier", size=14, weight="bold"),
+            fg_color=self.colors["surface"], hover_color="#2a2a2a",
+            border_color=self.colors["accent"], border_width=1,
+            command=self.toggle_monitoring
+        )
+        self.monitor_btn.pack(side="right", padx=10)
+
+        ctk.CTkButton(
+            monitor_ctrls, text="[!] ATUALIZAR", 
+            font=ctk.CTkFont(family="Courier", size=14, weight="bold"),
+            fg_color=self.colors["surface"], hover_color="#2a2a2a",
+            border_color=self.colors["accent"], border_width=1,
+            command=self.refresh_system_info
+        ).pack(side="right")
+
+
+        # --- FRAME 2: Otimizador ---
+        self.frames["optimizer"] = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.frames["optimizer"].grid_columnconfigure((0, 1), weight=1)
+        self.frames["optimizer"].grid_rowconfigure(1, weight=1)
+
+        ctk.CTkLabel(
+            self.frames["optimizer"], text=">>> TERMINAL DE OTIMIZAÇÃO <<<",
+            font=ctk.CTkFont(family="Courier", size=20, weight="bold"),
+            text_color=self.colors["accent"]
+        ).grid(row=0, column=0, columnspan=2, padx=20, pady=(20, 10), sticky="nw")
+
+        # Painel de Opções
+        options_panel = ctk.CTkFrame(self.frames["optimizer"], fg_color=self.colors["surface"], corner_radius=10)
+        options_panel.grid(row=1, column=0, padx=(20, 10), pady=10, sticky="nsew")
+        
+        ctk.CTkLabel(options_panel, text="OPÇÕES DE TASK", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(pady=(15, 10), padx=15, anchor="w")
+
+        self.opt_vars = {
+            "clean_temp": ctk.BooleanVar(value=True),
+            "clean_cache": ctk.BooleanVar(value=True),
+            "optimize_ram": ctk.BooleanVar(value=True),
+            "update_packages": ctk.BooleanVar(value=True),
+            "check_integrity": ctk.BooleanVar(value=True),
+            "disk_opt": ctk.BooleanVar(value=True),
+            "scan_virus": ctk.BooleanVar(value=False)
+        }
+        
+        opt_labels = [
+            ("clean_temp", "[T] Limpar Temporários"),
+            ("clean_cache", "[C] Limpar Cache"),
+            ("optimize_ram", "[M] Otimizar RAM"),
+            ("update_packages", "[U] Atualizar Pacotes"),
+            ("check_integrity", "[I] Verificar Integridade"),
+            ("disk_opt", "[D] Otimizar Disco"),
+            ("scan_virus", "[V] Scan de Vírus")
+        ]
+
+        for key, text in opt_labels:
+            sw = ctk.CTkSwitch(
+                options_panel, text=text, variable=self.opt_vars[key],
+                font=ctk.CTkFont(family="Courier", size=12),
+                progress_color=self.colors["accent"], button_color="#ffffff",
+                button_hover_color="#dddddd"
+            )
+            sw.pack(pady=10, padx=20, anchor="w")
+
+        # Ações
+        opt_actions = ctk.CTkFrame(options_panel, fg_color="transparent")
+        opt_actions.pack(pady=20, padx=20, fill="x", side="bottom")
+
+        self.start_btn = ctk.CTkButton(
+            opt_actions, text=">> EXECUTAR", 
+            font=ctk.CTkFont(family="Courier", size=14, weight="bold"),
+            fg_color=self.colors["accent"], text_color="black", hover_color=self.colors["accent_hover"],
+            command=self.start_optimization
+        )
+        self.start_btn.pack(side="left", expand=True, fill="x", padx=(0, 5))
+
+        self.stop_btn = ctk.CTkButton(
+            opt_actions, text="[X] CANCELAR", 
+            font=ctk.CTkFont(family="Courier", size=14, weight="bold"),
+            fg_color="#ff0000", text_color="white", hover_color="#cc0000",
+            state="disabled", command=self.stop_optimization
+        )
+        self.stop_btn.pack(side="right", expand=True, fill="x", padx=(5, 0))
+
+        # Terminal Log
+        log_panel = ctk.CTkFrame(self.frames["optimizer"], fg_color=self.colors["surface"], corner_radius=10)
+        log_panel.grid(row=1, column=1, padx=(10, 20), pady=10, sticky="nsew")
+        log_panel.grid_rowconfigure(0, weight=1)
+        log_panel.grid_columnconfigure(0, weight=1)
+
+        self.log_text = ProcessLogText(log_panel)
+        self.log_text.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+        welcome_msg = "┌─────────────────────────────────────────────────┐\n" \
+                      "│          PAGURO BOOST TERMINAL v2.0             │\n" \
+                      "│                                                 │\n" \
+                      "│  Sistema pronto para otimização...              │\n" \
+                      "└─────────────────────────────────────────────────┘\n\n" \
+                      "[SYSTEM] Terminal inicializado com sucesso.\n" \
+                      "[READY] Aguardando comandos...\n\n"
+        self.log_text.insert("end", welcome_msg)
+
+        # Barra de Operação
+        self.opt_progress = ctk.CTkProgressBar(self.frames["optimizer"], progress_color=self.colors["accent"])
+        self.opt_progress.grid(row=2, column=0, columnspan=2, padx=20, pady=(10, 20), sticky="ew")
+        self.opt_progress.set(0)
+
+
+        # --- FRAME 3: Análises ---
+        self.frames["analysis"] = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.frames["analysis"].grid_columnconfigure((0, 1), weight=1)
+
+        ctk.CTkLabel(
+            self.frames["analysis"], text=">>> CENTRAL DE ANÁLISES <<<",
+            font=ctk.CTkFont(family="Courier", size=20, weight="bold"),
+            text_color=self.colors["accent"]
+        ).grid(row=0, column=0, columnspan=2, padx=20, pady=(20, 30), sticky="nw")
+
+        analyses = [
+            ("Memória RAM", "Análise detalhada do uso de memória e top processos.", self.show_memory_analysis, 1, 0),
+            ("Armazenamento", "Escaneamento de arquivos grandes, antigos e duplicatas.", self.show_disk_analysis, 1, 1),
+            ("Performance", "Relatório avançado de estabilidade do sistema ao longo do tempo.", self.show_performance_report, 2, 0)
+        ]
+
+        for title, desc, cmd, row, col in analyses:
+            card = ctk.CTkFrame(self.frames["analysis"], fg_color=self.colors["surface"], corner_radius=15)
+            card.grid(row=row, column=col, padx=20, pady=20, sticky="nsew")
+            
+            ctk.CTkLabel(card, text=f"[{title.upper()}]", font=ctk.CTkFont(family="Courier", size=16, weight="bold"), text_color=self.colors["accent"]).pack(pady=(20, 10), padx=20, anchor="w")
+            ctk.CTkLabel(card, text=desc, font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text_dim"], wraplength=300, justify="left").pack(pady=(0, 20), padx=20, anchor="w", fill="x", expand=True)
+            
+            ctk.CTkButton(
+                card, text="INICIAR ANÁLISE >", 
+                font=ctk.CTkFont(family="Courier", size=12, weight="bold"),
+                fg_color="transparent", border_color=self.colors["accent"], border_width=1,
+                text_color=self.colors["accent"], hover_color="#222222",
+                command=cmd
+            ).pack(pady=20, padx=20, fill="x")
+
+    def select_frame_by_name(self, name):
+        # Cor de destaque no menu lateral
+        for btn_name, btn in self.nav_btns.items():
+            if btn_name == name:
+                btn.configure(fg_color=self.colors["surface"], text_color=self.colors["accent"])
+            else:
+                btn.configure(fg_color="transparent", text_color=self.colors["text"])
+        
+        # Ocultar todos os frames principais
+        for frame in self.frames.values():
+            frame.grid_forget()
+
+        # Mostrar o selecionado
+        self.frames[name].grid(row=0, column=1, sticky="nsew")
+
+    # ---- MÉTODOS DE LÓGICA / BACKEND (Adaptados) ----
+
     def log_message(self, message):
-        """Adiciona mensagem ao log de forma thread-safe."""
-        import time
         timestamp = time.strftime("%H:%M:%S")
-        formatted_message = f"[{timestamp}] {message}"
-        self.log_queue.put(formatted_message)
-        
+        self.log_queue.put(f"[{timestamp}] {message}\n")
+
     def process_log_queue(self):
-        """Processa mensagens do queue de log."""
         try:
             while True:
                 message = self.log_queue.get_nowait()
-                self.log_text.insert(tk.END, message + "\n")
-                self.log_text.see(tk.END)
-                self.root.update_idletasks()
+                self.log_text.insert("end", message)
+                self.log_text.see("end")
         except queue.Empty:
             pass
-        
-        # Reagendar para próxima verificação
-        self.root.after(100, self.process_log_queue)
-        
+        self.after(100, self.process_log_queue)
+
     def refresh_system_info(self):
-        """Atualiza informações do sistema."""
         def update_info():
             try:
                 if not self.optimizer:
                     self.optimizer = SystemOptimizer()
-                
-                # Detectar sistema
                 import platform
                 is_wsl = 'microsoft' in platform.uname().release.lower()
                 os_info = f"{platform.system()} {'(WSL)' if is_wsl else ''}"
-                
-                # Obter métricas
-                cpu, memory, disk = self.optimizer.medir_uso_recursos()
-                
-                # Atualizar labels na thread principal
-                self.root.after(0, lambda: self.os_label.config(text=f"SISTEMA: {os_info.upper()}"))
-                
+                self.after(0, lambda: self.os_label.configure(text=f"SISTEMA:\n{os_info.upper()}"))
             except Exception as e:
-                self.log_message(f"Erro ao atualizar informações: {e}")
-        
-        # Executar em thread separada
+                self.log_message(f"Erro ao atualizar info: {e}")
         threading.Thread(target=update_info, daemon=True).start()
-        
-    def create_ascii_bar(self, percentage, width=20):
-        """Cria barra de progresso ASCII."""
-        filled = int((percentage / 100) * width)
-        empty = width - filled
-        
-        if percentage >= 80:
-            fill_char = '█'
-            color = '#ff0000'  # Vermelho para crítico
-        elif percentage >= 60:
-            fill_char = '▓'
-            color = '#ffaa00'  # Laranja para alto
-        else:
-            fill_char = '▒'
-            color = '#00ff00'  # Verde para normal
-            
-        bar = fill_char * filled + '░' * empty
-        return bar, color
-    
+
+    def get_color_for_percentage(self, percentage):
+        if percentage >= 80: return self.colors["critical"]
+        if percentage >= 60: return self.colors["warning"]
+        return self.colors["accent"]
+
     def update_retro_display(self):
-        """Atualiza display retro com métricas em tempo real."""
         try:
             if not self.optimizer:
                 self.optimizer = SystemOptimizer()
-            
-            # Obter métricas atuais
             cpu, memory, disk = self.optimizer.medir_uso_recursos()
-            
-            # Limpar canvas
-            self.status_canvas.delete("all")
-            
-            # Configurações do canvas
-            canvas_width = self.status_canvas.winfo_width()
-            if canvas_width <= 1:  # Canvas ainda não foi renderizado
-                canvas_width = 600
-            
-            # Título do monitor
-            self.status_canvas.create_text(canvas_width//2, 15, text="MONITOR DE RECURSOS DO SISTEMA", 
-                                         fill='#00ff00', font=('Courier', 12, 'bold'))
-            
-            # Linha de separação
-            self.status_canvas.create_line(10, 25, canvas_width-10, 25, fill='#00aa00', width=2)
-            
-            # CPU
-            cpu_bar, cpu_color = self.create_ascii_bar(cpu)
-            self.status_canvas.create_text(15, 45, text=f"CPU:", fill='#00ff00', 
-                                         font=('Courier', 10, 'bold'), anchor='w')
-            self.status_canvas.create_text(60, 45, text=f"[{cpu_bar}]", fill=cpu_color, 
-                                         font=('Courier', 10), anchor='w')
-            self.status_canvas.create_text(canvas_width-80, 45, text=f"{cpu:5.1f}%", fill='#ffff00', 
-                                         font=('Courier', 10, 'bold'), anchor='w')
-            
-            # Memória
-            mem_bar, mem_color = self.create_ascii_bar(memory)
-            self.status_canvas.create_text(15, 65, text=f"RAM:", fill='#00ff00', 
-                                         font=('Courier', 10, 'bold'), anchor='w')
-            self.status_canvas.create_text(60, 65, text=f"[{mem_bar}]", fill=mem_color, 
-                                         font=('Courier', 10), anchor='w')
-            self.status_canvas.create_text(canvas_width-80, 65, text=f"{memory:5.1f}%", fill='#ffff00', 
-                                         font=('Courier', 10, 'bold'), anchor='w')
-            
-            # Disco
-            disk_bar, disk_color = self.create_ascii_bar(disk)
-            self.status_canvas.create_text(15, 85, text=f"HDD:", fill='#00ff00', 
-                                         font=('Courier', 10, 'bold'), anchor='w')
-            self.status_canvas.create_text(60, 85, text=f"[{disk_bar}]", fill=disk_color, 
-                                         font=('Courier', 10), anchor='w')
-            self.status_canvas.create_text(canvas_width-80, 85, text=f"{disk:5.1f}%", fill='#ffff00', 
-                                         font=('Courier', 10, 'bold'), anchor='w')
-            
-            # Status geral
-            if max(cpu, memory, disk) >= 80:
-                status_text = "CRÍTICO"
-                status_color = '#ff0000'
-            elif max(cpu, memory, disk) >= 60:
-                status_text = "ALTO"
-                status_color = '#ffaa00'
-            else:
-                status_text = "NORMAL"
-                status_color = '#00ff00'
-                
-            self.status_canvas.create_text(canvas_width-15, 105, text=f"STATUS: {status_text}", 
-                                         fill=status_color, font=('Courier', 10, 'bold'), anchor='e')
-            
-            # Linha de separação inferior
-            self.status_canvas.create_line(10, 95, canvas_width-10, 95, fill='#00aa00', width=1)
-            
+
+            # Update progress bars and labels
+            self.progress_bars["cpu"].set(cpu / 100.0)
+            self.progress_bars["cpu"].configure(progress_color=self.get_color_for_percentage(cpu))
+            self.progress_labels["cpu"].configure(text=f"{cpu:5.1f}%")
+
+            self.progress_bars["ram"].set(memory / 100.0)
+            self.progress_bars["ram"].configure(progress_color=self.get_color_for_percentage(memory))
+            self.progress_labels["ram"].configure(text=f"{memory:5.1f}%")
+
+            self.progress_bars["hdd"].set(disk / 100.0)
+            self.progress_bars["hdd"].configure(progress_color=self.get_color_for_percentage(disk))
+            self.progress_labels["hdd"].configure(text=f"{disk:5.1f}%")
+
         except Exception as e:
-            print(f"Erro ao atualizar display retro: {e}")
-        
-        # Reagendar para próxima atualização (2 segundos)
-        self.root.after(2000, self.update_retro_display)
-        
+            pass
+        self.after(2000, self.update_retro_display)
+
     def start_optimization(self):
-        """Inicia o processo de otimização."""
-        if self.running:
-            return
-            
+        if self.running: return
         self.running = True
-        self.start_button.config(state='disabled')
-        self.stop_button.config(state='normal')
-        self.progress.start()
+        self.start_btn.configure(state="disabled")
+        self.stop_btn.configure(state="normal")
+        self.opt_progress.configure(mode="indeterminate")
+        self.opt_progress.start()
         
-        # Limpar log
-        self.log_text.delete(1.0, tk.END)
-        self.log_message("=== Iniciando Otimização do Sistema ===")
-        
-        # Executar otimização em thread separada
-        optimization_thread = threading.Thread(target=self.run_optimization, daemon=True)
-        optimization_thread.start()
-        
+        self.log_text.delete("1.0", "end")
+        self.log_message("=== Iniciando Sequência de Otimização ===")
+        threading.Thread(target=self.run_optimization, daemon=True).start()
+
     def run_optimization(self):
-        """Executa a otimização em thread separada."""
         try:
-            if not self.optimizer:
-                self.optimizer = SystemOptimizer()
-            
-            # Verificar gerenciador de pacotes
+            if not self.optimizer: self.optimizer = SystemOptimizer()
             if not self.optimizer.verificar_gerenciador_pacotes():
                 self.log_message("[!] Gerenciador de pacotes não disponível!")
                 return
             
-            # Medições iniciais
             self.log_message("[M] Medindo recursos iniciais...")
-            cpu_initial, mem_initial, disk_initial = self.optimizer.medir_uso_recursos()
-            self.log_message(f"CPU: {cpu_initial:.1f}% | Memória: {mem_initial:.1f}% | Disco: {disk_initial:.1f}%")
-            
-            # Executar operações selecionadas
+            cpu_init, mem_init, disk_init = self.optimizer.medir_uso_recursos()
+            self.log_message(f"CPU: {cpu_init:.1f}% | RAM: {mem_init:.1f}% | HDD: {disk_init:.1f}%")
+
             operations = []
-            
-            if self.clean_temp_var.get():
-                operations.append((self.optimizer.limpar_temporarios, "[T] Limpando arquivos temporários"))
-                
-            if self.clean_cache_var.get():
-                operations.append((self.optimizer.limpar_cache_sistema, "[C] Limpando cache do sistema"))
-                
-            if self.optimize_ram_var.get():
-                operations.append((self.optimizer.otimizar_memoria_ram, "[M] Otimizando memória RAM"))
-                
-            if self.update_packages_var.get():
-                operations.append((self.optimizer.atualizar_pacotes, "[U] Atualizando pacotes"))
-                
-            if self.check_integrity_var.get():
-                operations.append((self.optimizer.verificar_integridade, "[I] Verificando integridade"))
-                
-            if self.scan_virus_var.get():
-                operations.append((self.optimizer.verificar_virus, "[V] Executando scan de vírus"))
-                
-            if self.disk_optimization_var.get():
-                operations.append((lambda: self.optimizer.otimizar_disco_avancado(limpar_antigos=True), "[D] Otimizando disco avançado"))
-            
-            # Executar operações
-            for operation, description in operations:
-                if not self.running:  # Verificar se foi cancelado
-                    break
-                    
-                self.log_message(description)
+            if self.opt_vars["clean_temp"].get(): operations.append((self.optimizer.limpar_temporarios, "[T] Limpando arquivos temporários"))
+            if self.opt_vars["clean_cache"].get(): operations.append((self.optimizer.limpar_cache_sistema, "[C] Limpando cache do sistema"))
+            if self.opt_vars["optimize_ram"].get(): operations.append((self.optimizer.otimizar_memoria_ram, "[M] Otimizando memória RAM"))
+            if self.opt_vars["update_packages"].get(): operations.append((self.optimizer.atualizar_pacotes, "[U] Atualizando pacotes"))
+            if self.opt_vars["check_integrity"].get(): operations.append((self.optimizer.verificar_integridade, "[I] Verificando integridade"))
+            if self.opt_vars["scan_virus"].get(): operations.append((self.optimizer.verificar_virus, "[V] Scan de vírus"))
+            if self.opt_vars["disk_opt"].get(): operations.append((lambda: self.optimizer.otimizar_disco_avancado(limpar_antigos=True), "[D] Otimização avançada de disco"))
+
+            for operation, desc in operations:
+                if not self.running: break
+                self.log_message(desc)
                 try:
                     success = operation()
                     status = "[OK] Concluído" if success else "[!] Com avisos"
-                    self.log_message(f"{description} - {status}")
+                    self.log_message(f"{desc} - {status}")
                 except Exception as e:
-                    self.log_message(f"{description} - [ERR] Erro: {e}")
-            
-            # Medições finais
+                    self.log_message(f"{desc} - [ERR] Falha: {e}")
+
             if self.running:
-                self.log_message("[M] Medindo recursos finais...")
-                cpu_final, mem_final, disk_final = self.optimizer.medir_uso_recursos()
-                
-                self.log_message("=== Relatório Final ===")
-                self.log_message(f"CPU: {cpu_initial:.1f}% -> {cpu_final:.1f}% (D{cpu_initial-cpu_final:+.1f}%)")
-                self.log_message(f"RAM: {mem_initial:.1f}% -> {mem_final:.1f}% (D{mem_initial-mem_final:+.1f}%)")
-                self.log_message(f"Disco: {disk_initial:.1f}% -> {disk_final:.1f}% (D{disk_initial-disk_final:+.1f}%)")
-                self.log_message("[!] Recomendação: Reinicie o sistema para melhor performance.")
-                
+                self.log_message("=== Relatório de Fechamento ===")
+                cpu_end, mem_end, disk_end = self.optimizer.medir_uso_recursos()
+                self.log_message(f"CPU: {cpu_init:.1f}% -> {cpu_end:.1f}%")
+                self.log_message(f"RAM: {mem_init:.1f}% -> {mem_end:.1f}%")
+                self.log_message(f"HDD: {disk_init:.1f}% -> {disk_end:.1f}%")
+                self.log_message("[RECOMMEND] Reinicie o sistema para aplicar as otimizações profundas.")
+
         except Exception as e:
-            self.log_message(f"[ERR] Erro fatal na otimização: {e}")
+            self.log_message(f"[FATAL] Erro crasso na otimização: {e}")
         finally:
-            # Finalizar
-            self.root.after(0, self.finish_optimization)
-            
+            self.after(0, self.finish_optimization)
+
     def stop_optimization(self):
-        """Para a otimização."""
         self.running = False
-        self.log_message("[X] Operação cancelada pelo usuário.")
-        
+        self.log_message("[X] INTERRUPÇÃO DE OTIMIZAÇÃO SOLICITADA PELO USUÁRIO.")
+
     def finish_optimization(self):
-        """Finaliza a otimização e restaura interface."""
         self.running = False
-        self.start_button.config(state='normal')
-        self.stop_button.config(state='disabled')
-        self.progress.stop()
-        
-        # Atualizar informações do sistema
+        self.start_btn.configure(state="normal")
+        self.stop_btn.configure(state="disabled")
+        self.opt_progress.stop()
+        self.opt_progress.configure(mode="determinate")
+        self.opt_progress.set(1.0)
         self.refresh_system_info()
-        
-    def show_memory_analysis(self):
-        """Mostra janela com análise detalhada de memória."""
-        def analyze_memory():
-            try:
-                if not self.optimizer:
-                    self.optimizer = SystemOptimizer()
-                
-                analysis = self.optimizer.analisar_uso_memoria_detalhado()
-                
-                # Criar janela de análise
-                analysis_window = tk.Toplevel(self.root)
-                analysis_window.title("Análise Detalhada de Memória")
-                analysis_window.geometry("600x500")
-                analysis_window.resizable(True, True)
-                
-                # Frame principal
-                main_frame = ttk.Frame(analysis_window, padding="20")
-                main_frame.pack(fill=tk.BOTH, expand=True)
-                
-                # Informações gerais
-                info_frame = ttk.LabelFrame(main_frame, text="Informações Gerais", padding="10")
-                info_frame.pack(fill=tk.X, pady=(0, 10))
-                
-                ttk.Label(info_frame, text=f"Memória Total: {analysis.get('memoria_total_gb', 0)} GB", 
-                         font=('Arial', 10, 'bold')).pack(anchor=tk.W)
-                ttk.Label(info_frame, text=f"Memória Usada: {analysis.get('memoria_usada_gb', 0)} GB", 
-                         font=('Arial', 10)).pack(anchor=tk.W)
-                ttk.Label(info_frame, text=f"Memória Livre: {analysis.get('memoria_livre_gb', 0)} GB", 
-                         font=('Arial', 10)).pack(anchor=tk.W)
-                ttk.Label(info_frame, text=f"Uso Percentual: {analysis.get('percentual_uso', 0):.1f}%", 
-                         font=('Arial', 10, 'bold')).pack(anchor=tk.W)
-                
-                if analysis.get('swap_total_gb', 0) > 0:
-                    ttk.Label(info_frame, text=f"Swap Total: {analysis.get('swap_total_gb', 0)} GB").pack(anchor=tk.W)
-                    ttk.Label(info_frame, text=f"Swap Usado: {analysis.get('swap_usado_gb', 0)} GB").pack(anchor=tk.W)
-                
-                # Top processos
-                proc_frame = ttk.LabelFrame(main_frame, text="Top 10 Processos (Memória)", padding="10")
-                proc_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-                
-                # Treeview para processos
-                tree = ttk.Treeview(proc_frame, columns=('PID', 'Memória %', 'MB'), show='tree headings')
-                tree.heading('#0', text='Processo')
-                tree.heading('PID', text='PID')
-                tree.heading('Memória %', text='Memória %')
-                tree.heading('MB', text='MB')
-                
-                tree.column('#0', width=200)
-                tree.column('PID', width=80)
-                tree.column('Memória %', width=100)
-                tree.column('MB', width=100)
-                
-                for proc in analysis.get('processos_top_memoria', []):
-                    tree.insert('', tk.END, text=proc['name'], 
-                               values=(proc['pid'], f"{proc['memory_percent']:.1f}%", proc['memory_mb']))
-                
-                # Scrollbar para treeview
-                scrollbar = ttk.Scrollbar(proc_frame, orient=tk.VERTICAL, command=tree.yview)
-                tree.configure(yscrollcommand=scrollbar.set)
-                
-                tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-                scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-                
-                # Recomendações
-                rec_frame = ttk.LabelFrame(main_frame, text="Recomendações", padding="10")
-                rec_frame.pack(fill=tk.X)
-                
-                for rec in analysis.get('recomendacoes', []):
-                    ttk.Label(rec_frame, text=rec, font=('Arial', 9)).pack(anchor=tk.W, pady=2)
-                
-                if not analysis.get('recomendacoes'):
-                    ttk.Label(rec_frame, text="[OK] Uso de memória está otimizado!", 
-                             font=('Arial', 10, 'bold'), foreground='green').pack(anchor=tk.W)
-                
-            except Exception as e:
-                messagebox.showerror("Erro", f"Erro na análise de memória: {e}")
-        
-        # Executar análise em thread separada
-        threading.Thread(target=analyze_memory, daemon=True).start()
-        
-    def show_performance_report(self):
-        """Mostra janela com relatório de performance."""
-        def generate_report():
-            try:
-                if not self.optimizer:
-                    self.optimizer = SystemOptimizer()
-                
-                # Permitir escolha do período
-                period_window = tk.Toplevel(self.root)
-                period_window.title("Período do Relatório")
-                period_window.geometry("300x200")
-                period_window.resizable(False, False)
-                
-                # Centralizar janela
-                period_window.transient(self.root)
-                period_window.grab_set()
-                
-                ttk.Label(period_window, text="Selecione o período:", font=('Arial', 12, 'bold')).pack(pady=10)
-                
-                period_var = tk.IntVar(value=24)
-                
-                ttk.Radiobutton(period_window, text="Últimas 6 horas", variable=period_var, value=6).pack(pady=5)
-                ttk.Radiobutton(period_window, text="Últimas 24 horas", variable=period_var, value=24).pack(pady=5)
-                ttk.Radiobutton(period_window, text="Últimos 3 dias", variable=period_var, value=72).pack(pady=5)
-                ttk.Radiobutton(period_window, text="Última semana", variable=period_var, value=168).pack(pady=5)
-                
-                def generate_with_period():
-                    hours = period_var.get()
-                    period_window.destroy()
-                    
-                    # Gerar relatório
-                    report = self.optimizer.gerar_relatorio_performance(hours)
-                    
-                    if 'error' in report:
-                        messagebox.showwarning("Aviso", report['error'])
-                        return
-                    
-                    # Criar janela do relatório
-                    report_window = tk.Toplevel(self.root)
-                    report_window.title(f"Relatório de Performance - {report.get('period', 'N/A')}")
-                    report_window.geometry("800x600")
-                    report_window.resizable(True, True)
-                    
-                    # Frame principal com scrollbar
-                    main_frame = ttk.Frame(report_window)
-                    main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-                    
-                    # Canvas e scrollbar
-                    canvas = tk.Canvas(main_frame)
-                    scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-                    scrollable_frame = ttk.Frame(canvas)
-                    
-                    scrollable_frame.bind(
-                        "<Configure>",
-                        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-                    )
-                    
-                    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-                    canvas.configure(yscrollcommand=scrollbar.set)
-                    
-                    # Título
-                    ttk.Label(scrollable_frame, text="[R] RELATÓRIO DE PERFORMANCE", 
-                             font=('Arial', 16, 'bold')).pack(pady=(0, 20))
-                    
-                    # Informações básicas
-                    info_frame = ttk.LabelFrame(scrollable_frame, text="Informações Gerais", padding="10")
-                    info_frame.pack(fill=tk.X, pady=(0, 10))
-                    
-                    ttk.Label(info_frame, text=f"Período: {report.get('period', 'N/A')}", 
-                             font=('Arial', 10, 'bold')).pack(anchor=tk.W)
-                    ttk.Label(info_frame, text=f"Amostras coletadas: {report.get('sample_count', 0)}").pack(anchor=tk.W)
-                    ttk.Label(info_frame, text=f"Gerado em: {report.get('generated_at', 'N/A')[:19]}").pack(anchor=tk.W)
-                    
-                    # Médias
-                    averages = report.get('averages', {}).get('averages', {})
-                    if averages:
-                        avg_frame = ttk.LabelFrame(scrollable_frame, text="Médias do Período", padding="10")
-                        avg_frame.pack(fill=tk.X, pady=(0, 10))
-                        
-                        ttk.Label(avg_frame, text=f"CPU Média: {averages.get('cpu_percent', 0):.1f}%", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                        ttk.Label(avg_frame, text=f"Memória Média: {averages.get('memory_percent', 0):.1f}%", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                        ttk.Label(avg_frame, text=f"Disco Médio: {averages.get('disk_percent', 0):.1f}%", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                    
-                    # Picos
-                    peaks = report.get('averages', {}).get('peaks', {})
-                    if peaks:
-                        peaks_frame = ttk.LabelFrame(scrollable_frame, text="Picos de Uso", padding="10")
-                        peaks_frame.pack(fill=tk.X, pady=(0, 10))
-                        
-                        ttk.Label(peaks_frame, text=f"CPU Máxima: {peaks.get('cpu_max', 0):.1f}%", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                        ttk.Label(peaks_frame, text=f"Memória Máxima: {peaks.get('memory_max', 0):.1f}%", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                        ttk.Label(peaks_frame, text=f"Disco Máximo: {peaks.get('disk_max', 0):.1f}%", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                    
-                    # Estabilidade
-                    stability = report.get('stability', {})
-                    if stability:
-                        stab_frame = ttk.LabelFrame(scrollable_frame, text="Análise de Estabilidade", padding="10")
-                        stab_frame.pack(fill=tk.X, pady=(0, 10))
-                        
-                        ttk.Label(stab_frame, text=f"Score de Estabilidade: {stability.get('stability_score', 'N/A')}", 
-                                 font=('Arial', 12, 'bold')).pack(anchor=tk.W)
-                        ttk.Label(stab_frame, text=f"Variância CPU: {stability.get('cpu_variance', 0):.2f}", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                        ttk.Label(stab_frame, text=f"Variância Memória: {stability.get('memory_variance', 0):.2f}", 
-                                 font=('Arial', 10)).pack(anchor=tk.W)
-                    
-                    # Padrões
-                    patterns = report.get('patterns', {})
-                    if patterns:
-                        pattern_frame = ttk.LabelFrame(scrollable_frame, text="Padrões de Uso", padding="10")
-                        pattern_frame.pack(fill=tk.X, pady=(0, 10))
-                        
-                        trend = patterns.get('usage_trend', 'N/A')
-                        ttk.Label(pattern_frame, text=f"Tendência de Uso: {trend}", 
-                                 font=('Arial', 10, 'bold')).pack(anchor=tk.W)
-                        
-                        peak_hours = patterns.get('peak_hours', {})
-                        if peak_hours:
-                            ttk.Label(pattern_frame, text=f"Pico CPU: {peak_hours.get('cpu_peak_hour', 0)}:00h ({peak_hours.get('cpu_peak_value', 0):.1f}%)", 
-                                     font=('Arial', 10)).pack(anchor=tk.W)
-                            ttk.Label(pattern_frame, text=f"Pico Memória: {peak_hours.get('memory_peak_hour', 0)}:00h ({peak_hours.get('memory_peak_value', 0):.1f}%)", 
-                                     font=('Arial', 10)).pack(anchor=tk.W)
-                    
-                    # Recomendações
-                    recommendations = report.get('recommendations', [])
-                    if recommendations:
-                        rec_frame = ttk.LabelFrame(scrollable_frame, text="Recomendações", padding="10")
-                        rec_frame.pack(fill=tk.X, pady=(0, 10))
-                        
-                        for rec in recommendations:
-                            ttk.Label(rec_frame, text=rec, font=('Arial', 10), wraplength=750).pack(anchor=tk.W, pady=2)
-                    
-                    # Configurar scrollbar
-                    canvas.pack(side="left", fill="both", expand=True)
-                    scrollbar.pack(side="right", fill="y")
-                
-                ttk.Button(period_window, text="Gerar Relatório", command=generate_with_period).pack(pady=20)
-                
-            except Exception as e:
-                messagebox.showerror("Erro", f"Erro ao gerar relatório: {e}")
-        
-        # Executar em thread separada
-        threading.Thread(target=generate_report, daemon=True).start()
-    
+
     def toggle_monitoring(self):
-        """Alterna monitoramento contínuo."""
-        if not self.optimizer:
-            self.optimizer = SystemOptimizer()
-        
+        if not self.optimizer: self.optimizer = SystemOptimizer()
         if not self.monitoring:
-            # Iniciar monitoramento
             if self.optimizer.iniciar_monitoramento_continuo(30):
                 self.monitoring = True
-                self.monitor_toggle_button.config(text="[||] Parar Monitor")
-                self.log_message("[>] Monitoramento contínuo iniciado (30s intervalos)")
+                self.monitor_btn.configure(text="[||] PAUSAR MONITOR LOG", text_color=self.colors["warning"], border_color=self.colors["warning"])
+                self.log_message("[>] Monitoramento em segundo plano ATIVADO.")
             else:
-                messagebox.showerror("Erro", "Não foi possível iniciar o monitoramento")
+                messagebox.showerror("Erro", "Falha ao acionar monitoramento.")
         else:
-            # Parar monitoramento
             self.optimizer.parar_monitoramento_continuo()
             self.monitoring = False
-            self.monitor_toggle_button.config(text="[>] Iniciar Monitor")
-            self.log_message("[||] Monitoramento contínuo parado")
-    
-    def show_disk_analysis(self):
-        """Mostra janela com análise detalhada de disco."""
-        def analyze_disk():
-            try:
-                if not self.optimizer:
-                    self.optimizer = SystemOptimizer()
-                
-                analysis = self.optimizer.analisar_uso_disco_detalhado()
-                
-                if not analysis:
-                    messagebox.showerror("Erro", "Não foi possível analisar o disco")
-                    return
-                
-                # Criar janela de análise
-                analysis_window = tk.Toplevel(self.root)
-                analysis_window.title("Análise Detalhada de Disco")
-                analysis_window.geometry("700x600")
-                analysis_window.resizable(True, True)
-                
-                # Frame principal com scrollbar
-                main_frame = ttk.Frame(analysis_window)
-                main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-                
-                # Canvas e scrollbar
-                canvas = tk.Canvas(main_frame)
-                scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-                scrollable_frame = ttk.Frame(canvas)
-                
-                scrollable_frame.bind(
-                    "<Configure>",
-                    lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-                )
-                
-                canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-                canvas.configure(yscrollcommand=scrollbar.set)
-                
-                # Título
-                ttk.Label(scrollable_frame, text="[D] ANÁLISE DE DISCO", 
-                         font=('Courier', 16, 'bold')).pack(pady=(0, 20))
-                
-                # Informações gerais
-                info_frame = ttk.LabelFrame(scrollable_frame, text="Informações Gerais", padding="10")
-                info_frame.pack(fill=tk.X, pady=(0, 10))
-                
-                ttk.Label(info_frame, text=f"Caminho: {analysis.get('caminho', 'N/A')}", 
-                         font=('Courier', 10, 'bold')).pack(anchor=tk.W)
-                ttk.Label(info_frame, text=f"Espaço Total: {analysis.get('espaco_total_gb', 0)} GB").pack(anchor=tk.W)
-                ttk.Label(info_frame, text=f"Espaço Usado: {analysis.get('espaco_usado_gb', 0)} GB").pack(anchor=tk.W)
-                ttk.Label(info_frame, text=f"Espaço Livre: {analysis.get('espaco_livre_gb', 0)} GB").pack(anchor=tk.W)
-                ttk.Label(info_frame, text=f"Uso Percentual: {analysis.get('percentual_uso', 0):.1f}%", 
-                         font=('Courier', 10, 'bold')).pack(anchor=tk.W)
-                
-                # Diretórios grandes
-                dirs_grandes = analysis.get('diretorios_grandes', [])
-                if dirs_grandes:
-                    dirs_frame = ttk.LabelFrame(scrollable_frame, text="Diretórios Grandes", padding="10")
-                    dirs_frame.pack(fill=tk.X, pady=(0, 10))
-                    
-                    for i, diretorio in enumerate(dirs_grandes[:5]):  # Top 5
-                        nome = os.path.basename(diretorio['caminho']) or diretorio['caminho']
-                        ttk.Label(dirs_frame, text=f"{i+1}. {nome}: {diretorio['tamanho_gb']:.1f} GB", 
-                                 font=('Courier', 9)).pack(anchor=tk.W)
-                
-                # Tipos de arquivo
-                tipos = analysis.get('tipos_arquivo', {})
-                if tipos:
-                    tipos_frame = ttk.LabelFrame(scrollable_frame, text="Tipos de Arquivo (Sample)", padding="10")
-                    tipos_frame.pack(fill=tk.X, pady=(0, 10))
-                    
-                    for ext, data in list(tipos.items())[:10]:  # Top 10
-                        ttk.Label(tipos_frame, text=f"{ext}: {data['arquivos']} arquivos ({data['tamanho_mb']:.1f} MB)", 
-                                 font=('Courier', 9)).pack(anchor=tk.W)
-                
-                # Arquivos antigos
-                antigos = analysis.get('arquivos_antigos', {})
-                if antigos and antigos.get('total_arquivos', 0) > 0:
-                    antigos_frame = ttk.LabelFrame(scrollable_frame, text="Arquivos Antigos", padding="10")
-                    antigos_frame.pack(fill=tk.X, pady=(0, 10))
-                    
-                    ttk.Label(antigos_frame, text=f"Total: {antigos['total_arquivos']} arquivos", 
-                             font=('Courier', 10, 'bold')).pack(anchor=tk.W)
-                    ttk.Label(antigos_frame, text=f"Tamanho: {antigos['tamanho_total_mb']:.1f} MB").pack(anchor=tk.W)
-                    
-                    sample_arquivos = antigos.get('sample_arquivos', [])
-                    for arquivo in sample_arquivos[:3]:  # Top 3
-                        nome = os.path.basename(arquivo['arquivo'])
-                        ttk.Label(antigos_frame, text=f"• {nome}: {arquivo['tamanho_mb']:.1f} MB ({arquivo['dias_antigo']} dias)", 
-                                 font=('Courier', 9)).pack(anchor=tk.W, padx=(10, 0))
-                
-                # Duplicados
-                duplicados = analysis.get('duplicados_sample', {})
-                if duplicados and duplicados.get('grupos_duplicados', 0) > 0:
-                    dup_frame = ttk.LabelFrame(scrollable_frame, text="Arquivos Duplicados (Sample)", padding="10")
-                    dup_frame.pack(fill=tk.X, pady=(0, 10))
-                    
-                    ttk.Label(dup_frame, text=f"Grupos de duplicados: {duplicados['grupos_duplicados']}", 
-                             font=('Courier', 10, 'bold')).pack(anchor=tk.W)
-                    ttk.Label(dup_frame, text=f"Espaço desperdiçado: {duplicados['tamanho_desperdicado_mb']:.1f} MB").pack(anchor=tk.W)
-                
-                # Recomendações
-                recomendacoes = analysis.get('recomendacoes', [])
-                if recomendacoes:
-                    rec_frame = ttk.LabelFrame(scrollable_frame, text="Recomendações", padding="10")
-                    rec_frame.pack(fill=tk.X)
-                    
-                    for rec in recomendacoes:
-                        ttk.Label(rec_frame, text=rec, font=('Courier', 9), wraplength=650).pack(anchor=tk.W, pady=2)
-                
-                # Configurar scrollbar
-                canvas.pack(side="left", fill="both", expand=True)
-                scrollbar.pack(side="right", fill="y")
-                
-            except Exception as e:
-                messagebox.showerror("Erro", f"Erro na análise de disco: {e}")
-        
-        # Executar análise em thread separada
-        threading.Thread(target=analyze_disk, daemon=True).start()
+            self.monitor_btn.configure(text="[>] INICIAR MONITOR LOG", text_color=self.colors["text"], border_color=self.colors["accent"])
+            self.log_message("[||] Monitoramento em segundo plano DESATIVADO.")
 
+    def abstract_popup_window(self, title, size="700x550"):
+        top = ctk.CTkToplevel(self)
+        top.title(title)
+        top.geometry(size)
+        top.configure(fg_color=self.colors["bg"])
+        top.transient(self)
+        
+        container = ctk.CTkScrollableFrame(top, fg_color="transparent")
+        container.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        ctk.CTkLabel(container, text=f">>> {title.upper()} <<<", font=ctk.CTkFont(family="Courier", size=20, weight="bold"), text_color=self.colors["accent"]).pack(pady=(0, 20), anchor="w")
+        
+        return top, container
+
+    def show_memory_analysis(self):
+        def analyze():
+            try:
+                if not self.optimizer: self.optimizer = SystemOptimizer()
+                analysis = self.optimizer.analisar_uso_memoria_detalhado()
+                
+                self.after(0, lambda: self._render_memory_analysis(analysis))
+            except Exception as e:
+                self.after(0, lambda: messagebox.showerror("Erro", f"Erro crítico na análise: {e}"))
+        threading.Thread(target=analyze, daemon=True).start()
+
+    def _render_memory_analysis(self, analysis):
+        top, container = self.abstract_popup_window("Análise de Memória RAM")
+        
+        # Info Box
+        info = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+        info.pack(fill="x", pady=10)
+        
+        metrics = [
+            f"Memória Total: {analysis.get('memoria_total_gb', 0)} GB",
+            f"Memória Usada: {analysis.get('memoria_usada_gb', 0)} GB",
+            f"Memória Livre: {analysis.get('memoria_livre_gb', 0)} GB",
+            f"Uso Relativo : {analysis.get('percentual_uso', 0):.1f}%"
+        ]
+        
+        for m in metrics:
+            ctk.CTkLabel(info, text=m, font=ctk.CTkFont(family="Courier", size=14), text_color=self.colors["text"]).pack(anchor="w", padx=20, pady=5)
+        
+        # Processos Box
+        proc = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+        proc.pack(fill="x", pady=20)
+        ctk.CTkLabel(proc, text="[TOP 10 PROCESSOS EM MEMÓRIA]", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(anchor="w", padx=20, pady=10)
+        
+        for p in analysis.get('processos_top_memoria', []):
+            line = f"{p['pid']:<8} | {p['memory_percent']:>5.1f}% | {p['memory_mb']:>7} MB | {p['name']}"
+            ctk.CTkLabel(proc, text=line, font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text"]).pack(anchor="w", padx=20, pady=2)
+            
+        # Recomendações
+        recs = analysis.get('recomendacoes', [])
+        if recs:
+            rec_frame = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            rec_frame.pack(fill="x", pady=10)
+            ctk.CTkLabel(rec_frame, text="[RECOMENDAÇÕES DO SISTEMA]", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["warning"]).pack(anchor="w", padx=20, pady=10)
+            for r in recs:
+                ctk.CTkLabel(rec_frame, text=f"-> {r}", font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text_dim"], wraplength=600, justify="left").pack(anchor="w", padx=20, pady=5)
+
+    def show_disk_analysis(self):
+        def analyze():
+            try:
+                if not self.optimizer: self.optimizer = SystemOptimizer()
+                analysis = self.optimizer.analisar_uso_disco_detalhado()
+                if analysis:
+                    self.after(0, lambda: self._render_disk_analysis(analysis))
+                else:
+                    self.after(0, lambda: messagebox.showerror("Erro", "Erro ao acessar partições."))
+            except Exception as e:
+                pass
+        threading.Thread(target=analyze, daemon=True).start()
+
+    def _render_disk_analysis(self, analysis):
+        top, container = self.abstract_popup_window("Análise de Armazenamento")
+        
+        info = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+        info.pack(fill="x", pady=10)
+        
+        ctk.CTkLabel(info, text=f"Diretório Raiz: {analysis.get('caminho', 'N/A')}", font=ctk.CTkFont(family="Courier", size=14, weight="bold")).pack(anchor="w", padx=20, pady=10)
+        ctk.CTkLabel(info, text=f"Total: {analysis.get('espaco_total_gb', 0)} GB | Usado: {analysis.get('espaco_usado_gb', 0)} GB | Livre: {analysis.get('espaco_livre_gb', 0)} GB", font=ctk.CTkFont(family="Courier", size=12)).pack(anchor="w", padx=20, pady=5)
+        
+        # Dirs grandes
+        dirs = analysis.get('diretorios_grandes', [])
+        if dirs:
+            df = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            df.pack(fill="x", pady=10)
+            ctk.CTkLabel(df, text="[DIRETÓRIOS CRÍTICOS (GRANDES)]", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(anchor="w", padx=20, pady=10)
+            for d in dirs[:5]:
+                nm = os.path.basename(d['caminho']) or d['caminho']
+                ctk.CTkLabel(df, text=f"{nm} -> {d['tamanho_gb']:.1f} GB", font=ctk.CTkFont(family="Courier", size=12)).pack(anchor="w", padx=20, pady=2)
+
+        # Arquivos antigos
+        ant = analysis.get('arquivos_antigos', {})
+        if ant and ant.get('total_arquivos', 0) > 0:
+            af = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            af.pack(fill="x", pady=10)
+            ctk.CTkLabel(af, text=f"[ARQUIVOS ANTIGOS] Total: {ant['total_arquivos']} | Desperdício: {ant['tamanho_total_mb']:.1f} MB", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["warning"]).pack(anchor="w", padx=20, pady=10)
+            for a in ant.get('sample_arquivos', [])[:5]:
+                ctk.CTkLabel(af, text=f"{os.path.basename(a['arquivo'])} | {a['dias_antigo']} dias | {a['tamanho_mb']:.1f} MB", font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text_dim"]).pack(anchor="w", padx=20, pady=2)
+
+        recs = analysis.get('recomendacoes', [])
+        if recs:
+            rec_frame = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            rec_frame.pack(fill="x", pady=10)
+            ctk.CTkLabel(rec_frame, text="[SUGESTÕES DE LIMPEZA]", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(anchor="w", padx=20, pady=10)
+            for r in recs:
+                ctk.CTkLabel(rec_frame, text=f"-> {r}", font=ctk.CTkFont(family="Courier", size=12), wraplength=600, justify="left").pack(anchor="w", padx=20, pady=5)
+
+
+    def show_performance_report(self):
+        # Para simplificar na reescrita premium, vamos gerar direto 24h as default
+        def generate():
+            try:
+                if not self.optimizer: self.optimizer = SystemOptimizer()
+                report = self.optimizer.gerar_relatorio_performance(24)
+                if 'error' in report:
+                    self.after(0, lambda: messagebox.showwarning("Aviso", report['error']))
+                    return
+                self.after(0, lambda: self._render_performance_report(report))
+            except Exception as e:
+                pass
+        threading.Thread(target=generate, daemon=True).start()
+
+    def _render_performance_report(self, report):
+        top, container = self.abstract_popup_window(f"Relatório de Estabilidade - {report.get('period', '24H')}")
+
+        info = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+        info.pack(fill="x", pady=10)
+        ctk.CTkLabel(info, text=f"Amostras: {report.get('sample_count', 0)} | Coleta: {report.get('generated_at', 'N/A')[:19]}", font=ctk.CTkFont(family="Courier", size=12)).pack(anchor="w", padx=20, pady=15)
+        
+        stab = report.get('stability', {})
+        if stab:
+            stf = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            stf.pack(fill="x", pady=10)
+            ctk.CTkLabel(stf, text=f"SCORE HORIZONTAL: {stab.get('stability_score', 'N/A')}", font=ctk.CTkFont(family="Courier", size=16, weight="bold"), text_color=self.colors["accent"]).pack(anchor="w", padx=20, pady=15)
+            
+        avg = report.get('averages', {}).get('averages', {})
+        if avg:
+            af = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            af.pack(fill="x", pady=10)
+            ctk.CTkLabel(af, text="[MÉDIAS REGISTRADAS]", font=ctk.CTkFont(family="Courier", size=14, weight="bold")).pack(anchor="w", padx=20, pady=10)
+            ctk.CTkLabel(af, text=f"CPU: {avg.get('cpu_percent', 0):.1f}% | RAM: {avg.get('memory_percent', 0):.1f}% | HDD: {avg.get('disk_percent', 0):.1f}%", font=ctk.CTkFont(family="Courier", size=12)).pack(anchor="w", padx=20, pady=5)
+
+        recs = report.get('recommendations', [])
+        if recs:
+            rf = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            rf.pack(fill="x", pady=10)
+            ctk.CTkLabel(rf, text="[CONCLUSÕES]", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(anchor="w", padx=20, pady=10)
+            for r in recs:
+                ctk.CTkLabel(rf, text=f"-> {r}", font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text"], wraplength=600, justify="left").pack(anchor="w", padx=20, pady=5)
 
 def main():
-    root = tk.Tk()
-    app = PaguroBoostGUI(root)
-    
+    app = PaguroBoostGUI()
     try:
-        root.mainloop()
+        app.mainloop()
     except KeyboardInterrupt:
         pass
-
 
 if __name__ == "__main__":
     main()

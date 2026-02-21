@@ -1,5 +1,6 @@
 # Core dependencies
 psutil>=5.9.0
+customtkinter>=5.2.2
 
 # Development dependencies (optional)
 pytest>=7.4.0
