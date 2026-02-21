@@ -6,6 +6,8 @@ import queue
 import time
 import os
 import sys
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
 # Attempt to import SystemOptimizer, handle running directly vs package
 try:
@@ -92,7 +94,8 @@ class PaguroBoostGUI(ctk.CTk):
         btn_configs = [
             ("dashboard", "📊 Dashboard"),
             ("optimizer", "⚡ Otimizador"),
-            ("analysis", "🔍 Análises Gerais")
+            ("analysis", "🔍 Análises Gerais"),
+            ("debloat", "🗑️ Debloat Pro")
         ]
 
         for idx, (name, text) in enumerate(btn_configs, start=1):
@@ -296,6 +299,69 @@ class PaguroBoostGUI(ctk.CTk):
                 text_color=self.colors["accent"], hover_color="#222222",
                 command=cmd
             ).pack(pady=20, padx=20, fill="x")
+
+        # --- FRAME 4: Debloat Pro ---
+        self.frames["debloat"] = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.frames["debloat"].grid_columnconfigure((0, 1), weight=1)
+        self.frames["debloat"].grid_rowconfigure(1, weight=1)
+
+        ctk.CTkLabel(
+            self.frames["debloat"], text=">>> DEBLOAT & PRIVACIDADE <<<",
+            font=ctk.CTkFont(family="Courier", size=20, weight="bold"),
+            text_color=self.colors["accent"]
+        ).grid(row=0, column=0, columnspan=2, padx=20, pady=(20, 10), sticky="nw")
+
+        # Coluna Esquerda: Lista de Bloatware
+        self.debloat_list_frame = ctk.CTkFrame(self.frames["debloat"], fg_color=self.colors["surface"], corner_radius=10)
+        self.debloat_list_frame.grid(row=1, column=0, padx=(20, 10), pady=10, sticky="nsew")
+        
+        ctk.CTkLabel(self.debloat_list_frame, text="PACOTES DETECTADOS", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(pady=(15, 10), padx=15, anchor="w")
+        
+        self.debloat_scroll = ctk.CTkScrollableFrame(self.debloat_list_frame, fg_color="transparent")
+        self.debloat_scroll.pack(fill="both", expand=True, padx=10, pady=5)
+        self.bloat_vars = {}
+        
+        self.scan_debloat_btn = ctk.CTkButton(
+            self.debloat_list_frame, text="ESCANEAR SISTEMA",
+            font=ctk.CTkFont(family="Courier", size=12, weight="bold"),
+            fg_color="transparent", border_color=self.colors["accent"], border_width=1,
+            text_color=self.colors["accent"], hover_color="#222222",
+            command=self.scan_bloatware
+        )
+        self.scan_debloat_btn.pack(pady=10, padx=15, fill="x")
+
+        self.run_debloat_btn = ctk.CTkButton(
+            self.debloat_list_frame, text="REMOVER SELECIONADOS",
+            font=ctk.CTkFont(family="Courier", size=12, weight="bold"),
+            fg_color=self.colors["accent"], text_color="black", hover_color="#00cc00",
+            state="disabled", command=self.execute_debloat
+        )
+        self.run_debloat_btn.pack(pady=(0, 15), padx=15, fill="x")
+
+        # Coluna Direita: Telemetria & Status
+        self.privacy_frame = ctk.CTkFrame(self.frames["debloat"], fg_color=self.colors["surface"], corner_radius=10)
+        self.privacy_frame.grid(row=1, column=1, padx=(10, 20), pady=10, sticky="nsew")
+        
+        ctk.CTkLabel(self.privacy_frame, text="PRIVACIDADE DO WINDOWS", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(pady=(15, 10), padx=15, anchor="w")
+        
+        self.telemetry_var = ctk.BooleanVar(value=True)
+        ctk.CTkSwitch(
+            self.privacy_frame, text="Desativar Telemetria Básica", variable=self.telemetry_var,
+            font=ctk.CTkFont(family="Courier", size=12),
+            progress_color=self.colors["accent"], button_color="#ffffff", button_hover_color="#dddddd"
+        ).pack(pady=10, padx=20, anchor="w")
+        
+        ctk.CTkButton(
+            self.privacy_frame, text="APLICAR PRIVACIDADE",
+            font=ctk.CTkFont(family="Courier", size=12, weight="bold"),
+            fg_color="transparent", border_color=self.colors["warning"], border_width=1,
+            text_color=self.colors["warning"], hover_color="#332200",
+            command=self.apply_telemetry
+        ).pack(pady=20, padx=15, fill="x")
+        
+        self.debloat_status_log = ctk.CTkTextbox(self.privacy_frame, font=ctk.CTkFont(family="Courier", size=11), fg_color="#000000", text_color="#00ff00", border_color=self.colors["accent"], border_width=1)
+        self.debloat_status_log.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        self.debloat_status_log.insert("end", "[READY] Módulo de Debloat Carregado.\n")
 
     def select_frame_by_name(self, name):
         # Cor de destaque no menu lateral
@@ -534,6 +600,41 @@ class PaguroBoostGUI(ctk.CTk):
         ctk.CTkLabel(info, text=f"Diretório Raiz: {analysis.get('caminho', 'N/A')}", font=ctk.CTkFont(family="Courier", size=14, weight="bold")).pack(anchor="w", padx=20, pady=10)
         ctk.CTkLabel(info, text=f"Total: {analysis.get('espaco_total_gb', 0)} GB | Usado: {analysis.get('espaco_usado_gb', 0)} GB | Livre: {analysis.get('espaco_livre_gb', 0)} GB", font=ctk.CTkFont(family="Courier", size=12)).pack(anchor="w", padx=20, pady=5)
         
+        # Gráfico Pie (Tipos de Arquivo)
+        tipos = analysis.get('tipos_arquivo', {})
+        if tipos:
+            chart_frame = ctk.CTkFrame(container, fg_color=self.colors["surface"], corner_radius=10)
+            chart_frame.pack(fill="x", pady=10)
+            ctk.CTkLabel(chart_frame, text="[DISTRIBUIÇÃO DE ARQUIVOS]", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(anchor="w", padx=20, pady=10)
+            
+            sorted_tipos = sorted(tipos.items(), key=lambda x: x[1]['tamanho_mb'], reverse=True)
+            top_5 = sorted_tipos[:5]
+            outros = sum(x[1]['tamanho_mb'] for x in sorted_tipos[5:])
+            
+            labels = [x[0] for x in top_5]
+            sizes = [x[1]['tamanho_mb'] for x in top_5]
+            if outros > 0:
+                labels.append('Outros')
+                sizes.append(outros)
+            
+            fig, ax = plt.subplots(figsize=(6, 4))
+            fig.patch.set_facecolor('#111111')
+            
+            colors = ['#00ff00', '#00cc00', '#009900', '#006600', '#003300', '#555555']
+            
+            wedges, texts, autotexts = ax.pie(sizes, labels=labels, autopct='%1.1f%%',
+                                              startangle=90, colors=colors[:len(sizes)], textprops={'color':"w"})
+            
+            plt.setp(autotexts, size=10, weight="bold")
+            ax.axis('equal')
+            
+            canvas = FigureCanvasTkAgg(fig, master=chart_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(pady=10)
+            
+            # Encerrar figura explicitamente para evitar vazamentos de memória (memory leak)
+            plt.close(fig)
+
         # Dirs grandes
         dirs = analysis.get('diretorios_grandes', [])
         if dirs:
@@ -603,6 +704,99 @@ class PaguroBoostGUI(ctk.CTk):
             ctk.CTkLabel(rf, text="[CONCLUSÕES]", font=ctk.CTkFont(family="Courier", size=14, weight="bold"), text_color=self.colors["accent"]).pack(anchor="w", padx=20, pady=10)
             for r in recs:
                 ctk.CTkLabel(rf, text=f"-> {r}", font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text"], wraplength=600, justify="left").pack(anchor="w", padx=20, pady=5)
+
+    def scan_bloatware(self):
+        self.scan_debloat_btn.configure(state="disabled")
+        self.debloat_status_log.insert("end", "\n[SCAN] Buscando bloatware instalado...\n")
+        self.debloat_status_log.see("end")
+        
+        def do_scan():
+            if not self.optimizer: self.optimizer = SystemOptimizer()
+            instalados = self.optimizer.listar_bloatware_instalado()
+            self.after(0, lambda: self._on_scan_complete(instalados))
+            
+        threading.Thread(target=do_scan, daemon=True).start()
+        
+    def _on_scan_complete(self, instalados):
+        for widget in self.debloat_scroll.winfo_children():
+            widget.destroy()
+            
+        self.bloat_vars.clear()
+        
+        if not instalados:
+            self.debloat_status_log.insert("end", "[OK] Nenhum pacote bloatware identificado.\n")
+        else:
+            self.debloat_status_log.insert("end", f"[!] {len(instalados)} pacotes identificados.\n")
+            for pkg in instalados:
+                var = ctk.BooleanVar(value=True)
+                self.bloat_vars[pkg] = var
+                cb = ctk.CTkCheckBox(self.debloat_scroll, text=pkg, variable=var, font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text"], fg_color=self.colors["accent"], hover_color="#00cc00")
+                cb.pack(pady=5, anchor="w")
+                
+            self.run_debloat_btn.configure(state="normal")
+            
+        self.scan_debloat_btn.configure(state="normal")
+        self.debloat_status_log.see("end")
+        
+    def execute_debloat(self):
+        selecionados = [pkg for pkg, var in self.bloat_vars.items() if var.get()]
+        if not selecionados:
+            messagebox.showinfo("Aviso", "Nenhum pacote selecionado.")
+            return
+            
+        if not messagebox.askyesno("Remoção", f"Remover {len(selecionados)} aplicativos de telemetria/bloatware?"):
+            return
+            
+        self.run_debloat_btn.configure(state="disabled")
+        self.scan_debloat_btn.configure(state="disabled")
+        self.debloat_status_log.insert("end", f"\n[RUN] Removendo {len(selecionados)} pacotes...\n")
+        self.debloat_status_log.see("end")
+        
+        def do_execute():
+            sucesso, qte = self.optimizer.remover_bloatware(selecionados)
+            self.after(0, lambda: self._on_execute_complete(sucesso, qte))
+            
+        threading.Thread(target=do_execute, daemon=True).start()
+        
+    def _on_execute_complete(self, sucesso, qte):
+        if sucesso:
+            self.debloat_status_log.insert("end", f"[OK] {qte} pacotes removidos.\n")
+        else:
+            self.debloat_status_log.insert("end", f"[WARN] Concluído com falhas.\n")
+            
+        self.debloat_status_log.see("end")
+        self.scan_debloat_btn.configure(state="normal")
+        
+        for pkg, var in list(self.bloat_vars.items()):
+            if var.get(): self.bloat_vars.pop(pkg)
+                
+        for widget in self.debloat_scroll.winfo_children(): widget.destroy()
+            
+        for pkg, var in self.bloat_vars.items():
+            cb = ctk.CTkCheckBox(self.debloat_scroll, text=pkg, variable=var, font=ctk.CTkFont(family="Courier", size=12), text_color=self.colors["text"], fg_color=self.colors["accent"], hover_color="#00cc00")
+            cb.pack(pady=5, anchor="w")
+            
+        if not self.bloat_vars:
+            self.run_debloat_btn.configure(state="disabled")
+            
+    def apply_telemetry(self):
+        if not messagebox.askyesno("Privacidade", "Desativar telemetria nativa do Windows? (Pode exigir Admin)"):
+            return
+            
+        self.debloat_status_log.insert("end", "\n[RUN] Desativando telemetria...\n")
+        self.debloat_status_log.see("end")
+        
+        def do_telemetry():
+            if not self.optimizer: self.optimizer = SystemOptimizer()
+            sucesso = self.optimizer.desativar_telemetria_windows()
+            status = "[OK] Telemetria limitada." if sucesso else "[WARN] Falha de permissão (Admin)."
+            self.after(0, lambda: self._on_telemetry_complete(status))
+            
+        threading.Thread(target=do_telemetry, daemon=True).start()
+        
+    def _on_telemetry_complete(self, status):
+        self.debloat_status_log.insert("end", f"{status}\n")
+        self.debloat_status_log.see("end")
 
 def main():
     app = PaguroBoostGUI()
